@@ -1,4 +1,4 @@
-# tribe-v2-project
+# MindMirror
 
 system-prompt.txt
 
