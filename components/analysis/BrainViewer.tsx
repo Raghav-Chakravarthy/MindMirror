@@ -108,13 +108,18 @@ function friendlyName(raw: string): string {
   return FRIENDLY_REGION_NAMES[raw] || raw.replace(/_/g, " ").replace(/^[GS]_/, "");
 }
 
-// Hot-to-cold colormap matching Meta's TRIBE v2 demo (warm tones)
+// Cold blue-green to hot red/maroon brain activity colormap — 10 colors
 function activationColor(value: number): [number, number, number] {
-  if (value < 0.2) return [0.15, 0.15, 0.18]; // dark gray (inactive)
-  if (value < 0.4) return [0.6, 0.3, 0.1];     // dark orange
-  if (value < 0.6) return [0.9, 0.4, 0.1];     // orange
-  if (value < 0.8) return [1.0, 0.6, 0.0];     // bright orange-yellow
-  return [1.0, 0.95, 0.3];                      // hot yellow
+  if (value < 0.1) return [0.0, 0.15, 0.3];      // dark teal-blue
+  if (value < 0.2) return [0.0, 0.35, 0.45];     // teal
+  if (value < 0.3) return [0.05, 0.6, 0.35];     // green
+  if (value < 0.4) return [0.4, 0.8, 0.15];      // lime-yellow
+  if (value < 0.5) return [0.95, 0.9, 0.1];      // bright yellow
+  if (value < 0.6) return [1.0, 0.6, 0.05];      // vivid orange
+  if (value < 0.7) return [1.0, 0.35, 0.05];     // blood orange
+  if (value < 0.8) return [0.95, 0.12, 0.05];    // vivid red
+  if (value < 0.9) return [0.7, 0.05, 0.03];     // deep red
+  return [0.38, 0.02, 0.02];                     // dark maroon
 }
 
 function lerpColor(a: [number, number, number], b: [number, number, number], t: number): [number, number, number] {
@@ -123,13 +128,16 @@ function lerpColor(a: [number, number, number], b: [number, number, number], t: 
 
 function smoothActivationColor(v: number): [number, number, number] {
   const stops: { t: number; c: [number, number, number] }[] = [
-    { t: 0.0, c: [0.55, 0.53, 0.56] },   // gray (brain base)
-    { t: 0.15, c: [0.55, 0.53, 0.56] },   // still gray
-    { t: 0.3, c: [0.6, 0.2, 0.05] },      // dark red
-    { t: 0.5, c: [0.9, 0.3, 0.05] },      // red-orange
-    { t: 0.7, c: [1.0, 0.55, 0.0] },      // orange
-    { t: 0.85, c: [1.0, 0.8, 0.1] },      // yellow-orange
-    { t: 1.0, c: [1.0, 1.0, 0.4] },       // bright yellow
+    { t: 0.0, c: [0.0, 0.12, 0.25] },      // 1. dark teal-blue
+    { t: 0.11, c: [0.0, 0.35, 0.45] },     // 2. teal
+    { t: 0.22, c: [0.05, 0.6, 0.35] },     // 3. green
+    { t: 0.33, c: [0.4, 0.82, 0.15] },     // 4. lime-yellow
+    { t: 0.44, c: [0.95, 0.92, 0.1] },     // 5. bright yellow
+    { t: 0.55, c: [1.0, 0.62, 0.05] },     // 6. vivid orange
+    { t: 0.66, c: [1.0, 0.35, 0.05] },     // 7. blood orange
+    { t: 0.77, c: [0.95, 0.12, 0.05] },    // 8. vivid red
+    { t: 0.88, c: [0.7, 0.05, 0.03] },     // 9. deep red
+    { t: 1.0, c: [0.38, 0.02, 0.02] },     // 10. dark maroon
   ];
   for (let i = 0; i < stops.length - 1; i++) {
     if (v <= stops[i + 1].t) {
@@ -207,11 +215,11 @@ export default function BrainViewer({ activeTopic, topics, onTopicSelect }: Prop
       const colors = new Float32Array(vertexCount * 3);
       for (let i = 0; i < vertexCount; i++) {
         const s = sulcData[i];
-        // Sulci (deep) = darker, Gyri (ridges) = lighter — like a real brain
-        const gray = 0.45 + (1 - s) * 0.2;
-        colors[i * 3] = gray;
-        colors[i * 3 + 1] = gray * 0.96;
-        colors[i * 3 + 2] = gray * 1.02;
+        // Sulci (deep) = darker, Gyri (ridges) = lighter — cold dark teal base
+        const base = 0.05 + (1 - s) * 0.1;
+        colors[i * 3] = 0.0;
+        colors[i * 3 + 1] = base * 0.8;
+        colors[i * 3 + 2] = base * 1.6;
       }
       geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
 
@@ -334,8 +342,8 @@ export default function BrainViewer({ activeTopic, topics, onTopicSelect }: Prop
             colorAttr.setXYZ(i, r, g, b);
           } else {
             const s = ref.sulcData[i];
-            const gray = 0.45 + (1 - s) * 0.2;
-            colorAttr.setXYZ(i, gray, gray * 0.96, gray * 1.02);
+            const base = 0.05 + (1 - s) * 0.1;
+            colorAttr.setXYZ(i, 0.0, base * 0.8, base * 1.6);
           }
         }
         colorAttr.needsUpdate = true;
@@ -432,7 +440,7 @@ export default function BrainViewer({ activeTopic, topics, onTopicSelect }: Prop
     <section className="space-y-5">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-3">
-          <div className="w-2 h-2 rounded-full bg-orange-500/60 animate-glow-pulse" />
+          <div className="w-2 h-2 rounded-full bg-red-500/60 animate-glow-pulse" />
           <h2 className="text-sm tracking-[0.2em] uppercase text-white/50 font-bold">
             Neural Activation Map
           </h2>
@@ -476,7 +484,7 @@ export default function BrainViewer({ activeTopic, topics, onTopicSelect }: Prop
         {loading && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="flex items-center gap-3 px-5 py-2.5 rounded-full bg-black/70 backdrop-blur-sm border border-white/[0.06]">
-              <div className="w-4 h-4 rounded-full border-2 border-orange-500/30 border-t-orange-500 animate-spin" />
+              <div className="w-4 h-4 rounded-full border-2 border-red-500/30 border-t-red-500 animate-spin" />
               <span className="text-xs text-white/60">Predicting brain activation...</span>
             </div>
           </div>
@@ -493,7 +501,7 @@ export default function BrainViewer({ activeTopic, topics, onTopicSelect }: Prop
         <div className="absolute bottom-4 right-5 flex items-center gap-2 pointer-events-none">
           <span className="text-[10px] text-white/25">Low</span>
           <div className="w-24 h-2 rounded-full" style={{
-            background: "linear-gradient(to right, #8a8890, #993310, #e64d0a, #ff8c00, #ffe066)"
+            background: "linear-gradient(to right, #002040, #005973, #0d995a, #66d126, #f2eb1a, #ff9e0d, #ff5908, #f21e0d, #b30d05, #610505)"
           }} />
           <span className="text-[10px] text-white/25">High</span>
         </div>
@@ -522,7 +530,7 @@ export default function BrainViewer({ activeTopic, topics, onTopicSelect }: Prop
             <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">
               Most Activated Brain Regions
             </span>
-            <div className="h-px flex-1 bg-gradient-to-r from-orange-500/15 to-transparent" />
+            <div className="h-px flex-1 bg-gradient-to-r from-red-500/15 to-transparent" />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {topRegions.map((region, i) => (
@@ -539,7 +547,7 @@ export default function BrainViewer({ activeTopic, topics, onTopicSelect }: Prop
                     <div className="flex-1 h-1 bg-white/[0.05] rounded-full overflow-hidden">
                       <div className="h-full rounded-full" style={{
                         width: `${region.mean_activation * 100}%`,
-                        background: `linear-gradient(to right, #993310, #ff8c00, #ffe066)`,
+                        background: `linear-gradient(to right, #005973, #66d126, #f2eb1a, #ff5908, #b30d05, #610505)`,
                       }} />
                     </div>
                     <span className="text-[10px] text-white/30 font-data w-8 text-right">
