@@ -55,7 +55,6 @@ function isConversationFile(filename: string, content: string): Platform | null 
   try {
     const parsed = JSON.parse(content);
     if (Array.isArray(parsed)) {
-      console.log(`[isConversationFile] "${filename}" is array with ${parsed.length} items. First item keys:`, parsed.length > 0 ? Object.keys(parsed[0]) : "empty");
       if (parsed.length > 0) {
         const sample = parsed.slice(0, Math.min(5, parsed.length));
         if (sample.some((item: Record<string, unknown>) => looksLikeChatGPTItem(item))) return "openai";
@@ -63,7 +62,6 @@ function isConversationFile(filename: string, content: string): Platform | null 
         if (sample.some((item: Record<string, unknown>) => item?.entries || item?.conversations)) return "gemini";
       }
     } else if (typeof parsed === "object") {
-      console.log(`[isConversationFile] "${filename}" is object with keys:`, Object.keys(parsed));
       if (looksLikeChatGPTItem(parsed)) return "openai";
       if (parsed.chat_messages) return "claude";
       if (parsed.entries || parsed.conversations) return "gemini";
@@ -78,16 +76,12 @@ async function extractFromZip(file: File): Promise<FilePayload[]> {
   const zip = await JSZip.loadAsync(file);
   const payloads: FilePayload[] = [];
 
-  const allPaths = Object.keys(zip.files).filter(p => !zip.files[p].dir);
-  console.log("[extractFromZip] files in ZIP:", allPaths);
-
   for (const [path, zipEntry] of Object.entries(zip.files)) {
     if (zipEntry.dir) continue;
     const lower = path.toLowerCase();
     if (!lower.endsWith(".json") && !lower.endsWith(".jsonl")) continue;
 
     const content = await zipEntry.async("string");
-    console.log(`[extractFromZip] checking "${path}" (${content.length} chars)`);
 
     if (lower.endsWith(".jsonl")) {
       payloads.push({ filename: path, content, platform: "claude" });
@@ -95,13 +89,11 @@ async function extractFromZip(file: File): Promise<FilePayload[]> {
     }
 
     const platform = isConversationFile(path, content);
-    console.log(`[extractFromZip] "${path}" → detected platform: ${platform}`);
     if (platform) {
       payloads.push({ filename: path, content, platform });
     }
   }
 
-  console.log(`[extractFromZip] total payloads: ${payloads.length}`, payloads.map(p => `${p.filename} (${p.platform})`));
   return payloads;
 }
 
@@ -165,10 +157,10 @@ export default function DropZone({ onReady }: Props) {
   return (
     <div className="space-y-4">
       <label
-        className={`block border-2 border-dashed transition-colors cursor-pointer ${
+        className={`block border-2 border-dashed rounded-xl transition-all duration-300 cursor-pointer ${
           dragging
-            ? "border-white bg-[#1a1a1a]"
-            : "border-[#333] hover:border-[#555]"
+            ? "border-purple-500/50 bg-purple-500/5"
+            : "border-white/[0.08] hover:border-purple-500/30 hover:bg-purple-500/[0.02]"
         }`}
         onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
         onDragLeave={() => setDragging(false)}
@@ -181,27 +173,38 @@ export default function DropZone({ onReady }: Props) {
           multiple
           onChange={onInputChange}
         />
-        <div className="px-8 py-12 text-center space-y-3">
-          <p className="text-2xl">↑</p>
-          <p className="text-sm text-[#888]">
-            Drop your export files here, or click to select
+        <div className="px-8 py-16 text-center space-y-4">
+          <div className="flex justify-center">
+            <div className={`w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 ${
+              dragging ? 'bg-purple-500/20 scale-110' : 'bg-white/[0.04]'
+            }`}>
+              <svg width="22" height="22" viewBox="0 0 20 20" fill="none" className={`transition-transform duration-300 ${dragging ? '-translate-y-1' : ''}`}>
+                <path d="M10 14V3M10 3L6 7M10 3L14 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-white/40" />
+                <path d="M3 14V16C3 16.5523 3.44772 17 4 17H16C16.5523 17 17 16.5523 17 16V14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="text-white/25" />
+              </svg>
+            </div>
+          </div>
+          <p className="text-base text-white/50">
+            Drop your export files here, or <span className="text-purple-400/80 hover:text-purple-400 transition-colors font-medium">browse</span>
           </p>
-          <p className="text-xs text-[#555]">
-            .json · .jsonl · .zip — Claude, ChatGPT, Gemini
+          <p className="text-xs text-white/30 font-data">
+            .json &middot; .jsonl &middot; .zip — Claude, ChatGPT, Gemini
           </p>
         </div>
       </label>
 
       {error && (
-        <p className="text-xs text-[#ff4444] border border-[#ff2222] bg-[#1a0000] px-4 py-3">
-          {error}
-        </p>
+        <div className="glass rounded-xl border-red-500/20 px-5 py-4">
+          <p className="text-sm text-red-400">{error}</p>
+        </div>
       )}
 
       {detected.length > 0 && (
-        <ul className="text-xs text-[#666] space-y-1">
+        <ul className="text-sm text-white/40 space-y-1.5">
           {detected.map((d, i) => (
-            <li key={i}>✓ {d}</li>
+            <li key={i} className="flex items-center gap-2">
+              <span className="text-emerald-400/70">&#x2713;</span> {d}
+            </li>
           ))}
         </ul>
       )}

@@ -5,6 +5,11 @@ set -e
 
 echo "Starting MindMirror..."
 
+# Load env vars from .env.local so the sidecar gets HF_TOKEN
+if [ -f .env.local ]; then
+  export $(grep -v '^#' .env.local | xargs)
+fi
+
 # Start Python TRIBE v2 sidecar in background
 echo "  → Starting TRIBE v2 sidecar on :8000"
 cd brain-service
@@ -15,7 +20,6 @@ python main.py &
 BRAIN_PID=$!
 cd ..
 
-# Give the sidecar a moment to begin loading the model
 sleep 2
 
 # Start Next.js frontend
@@ -30,6 +34,5 @@ echo "  Brain API: http://localhost:8000/health"
 echo ""
 echo "Press Ctrl+C to stop both services."
 
-# Wait and forward SIGINT/SIGTERM to children
 trap "kill $BRAIN_PID $NEXT_PID 2>/dev/null; exit 0" SIGINT SIGTERM
 wait $BRAIN_PID $NEXT_PID

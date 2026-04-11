@@ -46,7 +46,6 @@ export default function HomePage() {
       accumulatedRef.current = "";
       setStreamPreview("");
 
-      // Fire Gemini topic extraction in parallel (non-blocking)
       const geminiPromise = fetch("/api/gemini-extract", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -122,7 +121,6 @@ export default function HomePage() {
         throw new Error(`Incomplete analysis — missing: ${missing.join(", ")}. Please try again.`);
       }
 
-      // Collect Gemini results (already running in parallel)
       const geminiData = await geminiPromise;
 
       sessionStorage.setItem("mindmirror_result", JSON.stringify(result));
@@ -142,110 +140,168 @@ export default function HomePage() {
   }
 
   return (
-    <main className="min-h-screen flex flex-col">
-      <header className="border-b border-[#222] px-8 py-5 flex items-center justify-between">
-        <div>
-          <span className="text-xs text-[#555] tracking-[0.3em] uppercase">
-            ░░
-          </span>
-          <span className="text-sm font-bold tracking-[0.2em] ml-2">
+    <main className="min-h-screen flex flex-col relative overflow-hidden">
+      {/* Ambient background orbs */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] rounded-full bg-purple-500/[0.04] blur-[120px]" />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] rounded-full bg-pink-500/[0.03] blur-[120px]" />
+        <div className="absolute top-[40%] right-[20%] w-[300px] h-[300px] rounded-full bg-cyan-500/[0.02] blur-[100px]" />
+      </div>
+
+      {/* Header */}
+      <header className="relative z-10 border-b border-white/[0.06] px-8 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-2.5 h-2.5 rounded-full bg-purple-500 animate-glow-pulse" style={{ boxShadow: '0 0 10px #7c3aed' }} />
+          <span className="text-base font-bold tracking-[0.2em] text-white">
             MINDMIRROR
           </span>
         </div>
-        <span className="text-xs text-[#555]">
-          Cognitive analysis from AI conversation history
-        </span>
+        <div className="flex items-center gap-6">
+          <span className="text-xs text-white/30 tracking-widest uppercase hidden sm:block">
+            Cognitive Analysis Engine
+          </span>
+        </div>
       </header>
 
-      <div className="flex-1 flex flex-col items-center justify-center px-8 py-16">
+      <div className="flex-1 flex flex-col items-center justify-center px-8 py-16 relative z-10">
         {step === "upload" && (
-          <div className="w-full max-w-2xl space-y-10">
-            <div className="space-y-3">
-              <h1 className="text-3xl font-bold tracking-tight">
-                What does your AI history say about you?
+          <div className="w-full max-w-2xl space-y-12 animate-fade-in-up">
+            {/* Hero */}
+            <div className="space-y-6 text-center">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-purple-500/20 bg-purple-500/5 text-xs text-purple-400 tracking-widest uppercase">
+                <div className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
+                AI Conversation Analysis
+              </div>
+              <h1 className="text-5xl sm:text-6xl font-extrabold tracking-tight leading-[1.1]">
+                <span className="gradient-text">What does your</span>
+                <br />
+                <span className="text-white">AI history say</span>
+                <br />
+                <span className="gradient-text">about you?</span>
               </h1>
-              <p className="text-[#888] leading-relaxed">
+              <p className="text-white/55 leading-relaxed max-w-lg mx-auto text-base">
                 Upload your conversation exports from Claude, ChatGPT, or Gemini.
-                We&apos;ll analyze them and give you an uncomfortable but accurate
-                portrait of how you think.
+                Get an uncomfortably accurate portrait of how you think, what you
+                avoid, and what you&apos;re outsourcing to AI.
               </p>
             </div>
-            <DropZone onReady={handleFiles} />
 
-            <div className="flex items-center gap-4">
-              <div className="h-px flex-1 bg-[#222]" />
-              <span className="text-[10px] text-[#444] tracking-widest uppercase">or</span>
-              <div className="h-px flex-1 bg-[#222]" />
+            {/* Upload area */}
+            <div className="glass rounded-2xl p-1">
+              <DropZone onReady={handleFiles} />
             </div>
 
+            {/* Divider */}
+            <div className="flex items-center gap-4">
+              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/[0.08] to-transparent" />
+              <span className="text-xs text-white/30 tracking-widest uppercase">or</span>
+              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/[0.08] to-transparent" />
+            </div>
+
+            {/* Demo button */}
             <button
               onClick={() => {
                 sessionStorage.setItem("mindmirror_result", JSON.stringify(SAMPLE_RESULT));
                 sessionStorage.setItem("mindmirror_conversations", "[]");
                 router.push("/analysis");
               }}
-              className="w-full border border-[#333] hover:border-[#555] px-6 py-4 text-sm text-[#888] hover:text-white transition-all group"
+              className="w-full glass rounded-2xl px-6 py-6 text-base text-white/55 hover:text-white transition-all duration-500 group glow-hover"
             >
-              <span className="group-hover:tracking-wider transition-all">
-                Try with sample data
-              </span>
-              <span className="block text-[10px] text-[#444] mt-1">
-                See what MindMirror looks like with a pre-analyzed developer profile
+              <div className="flex items-center justify-center gap-3">
+                <div className="w-6 h-6 rounded-full border border-purple-500/30 flex items-center justify-center group-hover:border-purple-500/60 transition-colors">
+                  <div className="w-0 h-0 border-l-[6px] border-l-purple-400/60 border-y-[4px] border-y-transparent ml-0.5 group-hover:border-l-purple-400 transition-colors" />
+                </div>
+                <span className="font-semibold group-hover:tracking-wider transition-all duration-300">
+                  Try with sample data
+                </span>
+              </div>
+              <span className="block text-xs text-white/35 mt-2">
+                See a pre-analyzed developer profile — no upload needed
               </span>
             </button>
 
-            <div className="text-xs text-[#555] space-y-1">
-              <p>Claude: Settings &rarr; Export Data &rarr; conversations.json or .jsonl</p>
-              <p>ChatGPT: Settings &rarr; Data Controls &rarr; Export &rarr; conversations.json inside ZIP</p>
-              <p>Gemini: Google Takeout &rarr; Gemini &rarr; JSON files inside ZIP</p>
+            {/* Export instructions */}
+            <div className="grid grid-cols-3 gap-3 text-center">
+              {[
+                { name: "Claude", steps: "Settings → Export Data", color: "#d97706" },
+                { name: "ChatGPT", steps: "Data Controls → Export", color: "#10b981" },
+                { name: "Gemini", steps: "Google Takeout → Gemini", color: "#3b82f6" },
+              ].map((p) => (
+                <div key={p.name} className="border border-white/[0.06] rounded-xl px-4 py-4 hover:border-white/[0.12] transition-colors">
+                  <p className="text-xs font-bold tracking-wider mb-1" style={{ color: p.color }}>
+                    {p.name}
+                  </p>
+                  <p className="text-xs text-white/40 leading-relaxed">{p.steps}</p>
+                </div>
+              ))}
             </div>
           </div>
         )}
 
         {(step === "parsing" || step === "analyzing") && (
-          <div className="w-full max-w-lg space-y-8 text-center">
-            <div className="space-y-4">
-              <div className="flex items-center justify-center gap-3">
-                <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-                <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse [animation-delay:200ms]" />
-                <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse [animation-delay:400ms]" />
+          <div className="w-full max-w-lg space-y-10 text-center animate-fade-in">
+            <div className="flex justify-center">
+              <div className="relative w-24 h-24">
+                <div className="absolute inset-0 rounded-full bg-purple-500/10 animate-ping" style={{ animationDuration: '2s' }} />
+                <div className="absolute inset-2 rounded-full bg-purple-500/15 animate-ping" style={{ animationDuration: '2.5s' }} />
+                <div className="absolute inset-4 rounded-full bg-gradient-to-br from-purple-500/30 to-pink-500/30 animate-pulse" />
+                <div className="absolute inset-[38%] rounded-full bg-white/80" />
               </div>
-              <p className="text-[#888] text-sm">{statusMsg}</p>
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-white/80 text-base font-medium">{statusMsg}</p>
               {convCount > 0 && step === "analyzing" && (
-                <p className="text-[10px] text-[#444] tracking-widest uppercase">
-                  {convCount} conversations &middot; building your cognitive profile
+                <p className="text-xs text-white/35 tracking-[0.2em] uppercase">
+                  {convCount} conversations &middot; building cognitive profile
                 </p>
               )}
             </div>
 
-            {streamPreview && (
-              <div className="text-left border border-[#1a1a1a] bg-[#0d0d0d] p-4 overflow-hidden">
-                <p className="text-[10px] text-[#333] uppercase tracking-widest mb-3">
+            <div className="text-left glass rounded-2xl p-6 h-48 flex flex-col">
+              <div className="flex items-center gap-2 mb-3 flex-shrink-0">
+                <div className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" />
+                <p className="text-xs text-purple-400/70 uppercase tracking-[0.15em] font-semibold">
                   Live Analysis
                 </p>
-                <p className="text-xs text-[#555] font-mono leading-relaxed break-all whitespace-pre-wrap">
-                  {streamPreview}
-                  <span className="inline-block w-1.5 h-3 bg-white/60 ml-0.5 animate-pulse" />
-                </p>
               </div>
-            )}
+              <div className="flex-1 overflow-hidden relative">
+                <div className="absolute inset-0 overflow-y-auto flex flex-col-reverse">
+                  <p className="text-sm text-white/50 font-data leading-relaxed break-all whitespace-pre-wrap">
+                    {streamPreview || <span className="text-white/20">Waiting for data...</span>}
+                    <span className="inline-block w-[2px] h-4 bg-purple-400/80 ml-0.5 animate-pulse" />
+                  </p>
+                </div>
+                <div className="absolute top-0 left-0 right-0 h-6 bg-gradient-to-b from-[#0e0e16] to-transparent pointer-events-none z-10" />
+              </div>
+            </div>
           </div>
         )}
 
         {step === "error" && (
-          <div className="max-w-md space-y-6 text-center">
-            <p className="text-sm text-[#ff4444] border border-[#ff2222] bg-[#1a0000] px-6 py-4">
-              {error}
-            </p>
+          <div className="max-w-md space-y-6 text-center animate-fade-in">
+            <div className="glass rounded-2xl p-8 border-red-500/20">
+              <p className="text-base text-red-400">{error}</p>
+            </div>
             <button
               onClick={() => { setStep("upload"); setError(null); }}
-              className="text-xs text-[#888] underline hover:text-white"
+              className="text-sm text-white/40 hover:text-white transition-colors"
             >
-              Try again
+              &larr; Try again
             </button>
           </div>
         )}
       </div>
+
+      {/* Footer */}
+      <footer className="relative z-10 border-t border-white/[0.06] px-8 py-4 flex items-center justify-between">
+        <span className="text-xs text-white/25">
+          Built at Bitcamp 2026
+        </span>
+        <span className="text-xs text-white/25">
+          Claude + Gemini + Three.js + TRIBE v2
+        </span>
+      </footer>
     </main>
   );
 }

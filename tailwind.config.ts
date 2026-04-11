@@ -9,16 +9,14 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        void: "#0a0a0a",
-        surface: "#111111",
-        border: "#222222",
-        muted: "#444444",
-        dim: "#888888",
-        text: "#e8e8e8",
-        accent: "#ffffff",
+        void: "#050508",
+        surface: "#0a0a0f",
+        "surface-2": "#10101a",
+        border: "#1a1a2e",
       },
       fontFamily: {
-        mono: ["'Courier New'", "Courier", "monospace"],
+        sans: ["-apple-system", "BlinkMacSystemFont", "'Segoe UI'", "'Inter'", "Roboto", "sans-serif"],
+        mono: ["'SF Mono'", "'Fira Code'", "'JetBrains Mono'", "'Courier New'", "monospace"],
       },
     },
   },

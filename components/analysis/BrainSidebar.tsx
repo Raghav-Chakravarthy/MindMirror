@@ -114,9 +114,9 @@ export default function BrainSidebar({ activeTopic }: Props) {
       nodePositions[i * 3 + 1] = nodes[i].y;
       nodePositions[i * 3 + 2] = nodes[i].z;
       nodeSizes[i] = 3 + Math.random() * 4;
-      nodeColors[i * 3] = 0.15;
-      nodeColors[i * 3 + 1] = 0.15;
-      nodeColors[i * 3 + 2] = 0.2;
+      nodeColors[i * 3] = 0.25;
+      nodeColors[i * 3 + 1] = 0.22;
+      nodeColors[i * 3 + 2] = 0.35;
       nodeActivations[i] = 0;
     }
 
@@ -170,9 +170,9 @@ export default function BrainSidebar({ activeTopic }: Props) {
       glowPositions[i * 3 + 1] = nodes[i].y;
       glowPositions[i * 3 + 2] = nodes[i].z;
       glowSizes[i] = 12 + Math.random() * 8;
-      glowColors[i * 3] = 0.05;
-      glowColors[i * 3 + 1] = 0.05;
-      glowColors[i * 3 + 2] = 0.08;
+      glowColors[i * 3] = 0.12;
+      glowColors[i * 3 + 1] = 0.10;
+      glowColors[i * 3 + 2] = 0.18;
     }
 
     const glowGeo = new THREE.BufferGeometry();
@@ -226,7 +226,7 @@ export default function BrainSidebar({ activeTopic }: Props) {
       edgePositions[i * 6 + 4] = nodes[b].y;
       edgePositions[i * 6 + 5] = nodes[b].z;
       for (let j = 0; j < 6; j++) {
-        edgeColors[i * 6 + j] = 0.08;
+        edgeColors[i * 6 + j] = 0.15;
       }
     }
 
@@ -245,8 +245,8 @@ export default function BrainSidebar({ activeTopic }: Props) {
     scene.add(edgesMesh);
 
     const clock = new THREE.Clock();
-    const targetColor = new THREE.Color(0.15, 0.15, 0.2);
-    const currentColor = new THREE.Color(0.15, 0.15, 0.2);
+    const targetColor = new THREE.Color(0.25, 0.22, 0.35);
+    const currentColor = new THREE.Color(0.25, 0.22, 0.35);
 
     let frame = 0;
     const animate = () => {
@@ -269,9 +269,9 @@ export default function BrainSidebar({ activeTopic }: Props) {
         const act = nodeActivations[i];
         const blend = act * ref.activation;
 
-        const baseR = 0.15 + blend * (currentColor.r - 0.15);
-        const baseG = 0.15 + blend * (currentColor.g - 0.15);
-        const baseB = 0.2 + blend * (currentColor.b - 0.2);
+        const baseR = 0.25 + blend * (currentColor.r - 0.25);
+        const baseG = 0.22 + blend * (currentColor.g - 0.22);
+        const baseB = 0.35 + blend * (currentColor.b - 0.35);
 
         nc.setXYZ(i,
           baseR + pulse * blend * 0.3,
@@ -402,30 +402,29 @@ export default function BrainSidebar({ activeTopic }: Props) {
     sceneRef.current.targetColor = color;
     sceneRef.current.targetActivation = 1;
 
-    // TODO: uncomment when TRIBE v2 sidecar + HF_TOKEN are configured
-    // try {
-    //   const res = await fetch("/api/brain", {
-    //     method: "POST",
-    //     headers: { "Content-Type": "application/json" },
-    //     body: JSON.stringify({ text: topic.name }),
-    //   });
-    //   const data: { activation: number[] | null } = await res.json();
-    //   if (data.activation && data.activation.length > 0) {
-    //     applyTribeActivation(data.activation);
-    //     setTribeAvailable(true);
-    //     return;
-    //   }
-    // } catch {
-    //   // Sidecar not running
-    // }
+    try {
+      const res = await fetch("/api/brain", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: topic.name }),
+      });
+      const data: { activation: number[] | null } = await res.json();
+      if (data.activation && data.activation.length > 0) {
+        applyTribeActivation(data.activation);
+        setTribeAvailable(true);
+        return;
+      }
+    } catch {
+      // Sidecar not running — use procedural fallback
+    }
 
     applyProceduralActivation(topic);
-  }, [applyProceduralActivation]);
+  }, [applyTribeActivation, applyProceduralActivation]);
 
   const deactivate = useCallback(() => {
     if (!sceneRef.current) return;
     setStatus("idle");
-    sceneRef.current.targetColor = new THREE.Color(0.15, 0.15, 0.2);
+    sceneRef.current.targetColor = new THREE.Color(0.25, 0.22, 0.35);
     sceneRef.current.targetActivation = 0;
   }, []);
 
@@ -458,16 +457,16 @@ export default function BrainSidebar({ activeTopic }: Props) {
 
       <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between pointer-events-none">
         {tribeAvailable && (
-          <span className="text-[8px] text-[#444] tracking-wider">
+          <span className="text-[9px] text-white/30 tracking-wider font-bold">
             TRIBE v2 &middot; Meta
           </span>
         )}
         <div className="flex items-center gap-1.5 ml-auto">
           <div
-            className="w-3 h-px"
-            style={{ background: "linear-gradient(to right, #1a1a2e, #7c3aed, #ec4899)" }}
+            className="w-4 h-[2px] rounded-full"
+            style={{ background: "linear-gradient(to right, #7c3aed, #ec4899)" }}
           />
-          <span className="text-[8px] text-[#333]">
+          <span className="text-[9px] text-white/25">
             {tribeAvailable ? "fMRI prediction" : "neural activity"}
           </span>
         </div>

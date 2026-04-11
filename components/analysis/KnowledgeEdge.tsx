@@ -7,13 +7,14 @@ interface Props {
 export default function KnowledgeEdge({ edges }: Props) {
   return (
     <section className="space-y-6">
-      <div className="border-b border-[#222] pb-3 flex items-baseline gap-3">
-        <h2 className="text-xs tracking-[0.3em] uppercase text-[#555]">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-2 h-2 rounded-full bg-emerald-500/60" />
+        <h2 className="text-sm tracking-[0.2em] uppercase text-white/50 font-bold">
           Knowledge Edge
         </h2>
-        <div className="h-px flex-1 bg-gradient-to-r from-[#222] to-transparent" />
+        <div className="h-px flex-1 bg-gradient-to-r from-emerald-500/20 to-transparent" />
       </div>
-      <p className="text-xs text-[#444]">
+      <p className="text-sm text-white/45">
         Unusual knowledge areas that give you a competitive advantage.
       </p>
 
@@ -21,14 +22,14 @@ export default function KnowledgeEdge({ edges }: Props) {
         {edges.map((edge, i) => (
           <div
             key={i}
-            className="border border-[#1a1a1a] px-6 py-5 flex items-start gap-4 hover:border-[#10b981] transition-all duration-300 group relative overflow-hidden"
+            className="glass rounded-xl px-6 py-5 flex items-start gap-4 transition-all duration-300 group glow-hover relative overflow-hidden"
           >
             <div
-              className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-              style={{ background: "linear-gradient(135deg, #10b98108, transparent 60%)" }}
+              className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none rounded-xl"
+              style={{ background: "linear-gradient(135deg, rgba(16, 185, 129, 0.06), transparent 60%)" }}
             />
-            <span className="text-[#10b981] text-sm mt-0.5 relative">&#x25C6;</span>
-            <p className="text-sm text-[#ccc] leading-relaxed relative group-hover:text-white transition-colors">
+            <span className="text-emerald-400 text-base mt-0.5 relative group-hover:text-emerald-300 transition-colors">&#x25C6;</span>
+            <p className="text-base text-white/65 leading-relaxed relative group-hover:text-white/90 transition-colors duration-300">
               {edge}
             </p>
           </div>

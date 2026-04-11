@@ -14,12 +14,14 @@ import Verdict from "@/components/analysis/Verdict";
 import ShareableCard from "@/components/analysis/ShareableCard";
 import GeminiInsights from "@/components/analysis/GeminiInsights";
 
-// Three.js brain viewer — browser only, no SSR
-const BrainSidebar = dynamic(() => import("@/components/analysis/BrainSidebar"), {
+const BrainViewer = dynamic(() => import("@/components/analysis/BrainViewer"), {
   ssr: false,
   loading: () => (
-    <div className="flex items-center justify-center h-full text-[#444] text-xs">
-      Loading brain viewer...
+    <div className="w-full h-[500px] rounded-2xl border border-purple-500/10 flex items-center justify-center bg-[#08080f]">
+      <div className="text-center space-y-3">
+        <div className="w-8 h-8 rounded-full border-2 border-purple-500/30 border-t-purple-500 animate-spin mx-auto" />
+        <p className="text-sm text-white/30">Loading brain viewer...</p>
+      </div>
     </div>
   ),
 });
@@ -47,68 +49,68 @@ export default function AnalysisPage() {
   if (!result) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-[#555] text-sm">Loading...</div>
+        <div className="w-3 h-3 rounded-full bg-purple-500 animate-pulse" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen">
       {/* Header */}
-      <header className="border-b border-[#222] px-8 py-5 flex items-center justify-between sticky top-0 bg-[#0a0a0a] z-10">
-        <div>
-          <span className="text-xs text-[#555] tracking-[0.3em]">░░</span>
-          <span className="text-sm font-bold tracking-[0.2em] ml-2">MINDMIRROR</span>
+      <header className="border-b border-white/[0.06] px-8 py-4 flex items-center justify-between sticky top-0 bg-[#050508]/90 backdrop-blur-xl z-20">
+        <div className="flex items-center gap-3">
+          <div className="w-2.5 h-2.5 rounded-full animate-glow-pulse" style={{ backgroundColor: result.ARCHETYPE.color, boxShadow: `0 0 10px ${result.ARCHETYPE.color}` }} />
+          <span className="text-base font-bold tracking-[0.2em] text-white">
+            MINDMIRROR
+          </span>
+          <span className="text-sm text-white/40 ml-2 hidden sm:block">
+            / {result.ARCHETYPE.name}
+          </span>
         </div>
         <button
           onClick={() => router.push("/")}
-          className="text-xs text-[#555] hover:text-white transition-colors"
+          className="text-sm text-white/40 hover:text-white transition-colors duration-300 flex items-center gap-2"
         >
-          ← New Analysis
+          <span>&larr;</span> New Analysis
         </button>
       </header>
 
-      <div className="flex flex-1 overflow-hidden">
-        {/* Main content */}
-        <main className="flex-1 overflow-y-auto">
-          <div className="max-w-4xl mx-auto px-8 py-12 space-y-16 stagger-children">
-            <ArchetypeHero archetype={result.ARCHETYPE} />
-            <Verdict verdict={result.VERDICT} />
-            <CognitiveFingerprint fingerprint={result.COGNITIVE_FINGERPRINT} />
-            <TopicsGrid
-              topics={result.TOPICS}
-              onTopicHover={setActiveTopic}
-            />
-            <DependencyAudit items={result.DEPENDENCY_AUDIT} />
-            <UncomfortableQuestions questions={result.UNCOMFORTABLE_QUESTIONS} />
-            <KnowledgeEdge edges={result.KNOWLEDGE_EDGE} />
-            {geminiData && <GeminiInsights data={geminiData as any} />}
-            <ShareableCard card={result.SHAREABLE_CARD} />
-          </div>
-        </main>
+      {/* Single column content */}
+      <main className="max-w-5xl mx-auto px-6 sm:px-10 py-16 space-y-24 stagger-children">
+        <ArchetypeHero archetype={result.ARCHETYPE} />
 
-        {/* Brain sidebar */}
-        <aside className="w-80 border-l border-[#222] flex flex-col sticky top-[57px] h-[calc(100vh-57px)]">
-          <div className="px-4 py-3 border-b border-[#222]">
-            <p className="text-xs text-[#555] uppercase tracking-widest">
-              Brain Activation
-            </p>
-            {activeTopic && (
-              <p className="text-xs text-[#888] mt-1 truncate">
-                {activeTopic.name}
-              </p>
-            )}
-          </div>
-          <div className="flex-1">
-            <BrainSidebar activeTopic={activeTopic} />
-          </div>
-          <div className="px-4 py-3 border-t border-[#222]">
-            <p className="text-[10px] text-[#444] leading-relaxed">
-              Neural activation via Meta TRIBE v2 when available. Hover a topic to see which brain regions activate.
-            </p>
-          </div>
-        </aside>
-      </div>
+        <Verdict verdict={result.VERDICT} />
+
+        <CognitiveFingerprint fingerprint={result.COGNITIVE_FINGERPRINT} />
+
+        {/* Brain Activation — the hero visualization */}
+        <BrainViewer
+          activeTopic={activeTopic}
+          topics={result.TOPICS}
+          onTopicSelect={setActiveTopic}
+        />
+
+        <TopicsGrid
+          topics={result.TOPICS}
+          onTopicHover={setActiveTopic}
+        />
+
+        <DependencyAudit items={result.DEPENDENCY_AUDIT} />
+
+        <UncomfortableQuestions questions={result.UNCOMFORTABLE_QUESTIONS} />
+
+        <KnowledgeEdge edges={result.KNOWLEDGE_EDGE} />
+
+        {geminiData && <GeminiInsights data={geminiData as any} />}
+
+        <ShareableCard card={result.SHAREABLE_CARD} />
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t border-white/[0.06] px-8 py-4 flex items-center justify-between max-w-5xl mx-auto">
+        <span className="text-xs text-white/25">Built at Bitcamp 2026</span>
+        <span className="text-xs text-white/25">Claude + Gemini + Three.js + TRIBE v2</span>
+      </footer>
     </div>
   );
 }
