@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text }),
-      signal: AbortSignal.timeout(30_000),
+      signal: AbortSignal.timeout(180_000),
     });
 
     if (!res.ok) {
@@ -23,8 +23,10 @@ export async function POST(req: NextRequest) {
 
     const data = await res.json();
     return NextResponse.json(data);
-  } catch (err) {
-    // Sidecar may not be running — return graceful null
-    return NextResponse.json({ activation: null }, { status: 200 });
+  } catch {
+    return NextResponse.json(
+      { activation: null, top_regions: [], cached: false },
+      { status: 200 }
+    );
   }
 }

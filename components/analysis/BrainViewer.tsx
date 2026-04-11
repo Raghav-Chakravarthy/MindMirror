@@ -10,6 +10,14 @@ interface Props {
   onTopicSelect: (topic: Topic | null) => void;
 }
 
+interface TopRegion {
+  id: number;
+  name: string;
+  mean_activation: number;
+  max_activation: number;
+  vertex_count: number;
+}
+
 const DOMAIN_COLORS: Record<TopicDomain, string> = {
   ai: "#7c3aed",
   frontend: "#0ea5e9",
@@ -20,301 +28,224 @@ const DOMAIN_COLORS: Record<TopicDomain, string> = {
   other: "#6b7280",
 };
 
-const REGION_LABELS = [
-  { name: "Prefrontal Cortex", desc: "Planning & decision-making", pos: [0, 0.6, 1.1] },
-  { name: "Temporal Lobe", desc: "Language & memory", pos: [-1.3, -0.2, 0.3] },
-  { name: "Parietal Lobe", desc: "Spatial reasoning", pos: [0, 0.8, -0.2] },
-  { name: "Occipital Lobe", desc: "Visual processing", pos: [0, 0.3, -1.1] },
-  { name: "Motor Cortex", desc: "Action & execution", pos: [0, 1.0, 0.3] },
-  { name: "Broca's Area", desc: "Speech production", pos: [-1.1, 0.3, 0.8] },
-];
+const FRIENDLY_REGION_NAMES: Record<string, string> = {
+  "G_and_S_frontomargin": "Frontomarginal Gyrus — Planning & Attention",
+  "G_and_S_occipital_inf": "Inferior Occipital — Visual Processing",
+  "G_and_S_paracentral": "Paracentral Lobule — Motor Control",
+  "G_and_S_subcentral": "Subcentral Gyrus — Sensorimotor",
+  "G_and_S_transv_frontopol": "Frontopolar — Abstract Reasoning",
+  "G_and_S_cingul-Ant": "Anterior Cingulate — Decision Making",
+  "G_and_S_cingul-Mid-Ant": "Mid-Anterior Cingulate — Conflict Monitoring",
+  "G_and_S_cingul-Mid-Post": "Mid-Posterior Cingulate — Self-Reflection",
+  "G_cingul-Post-dorsal": "Posterior Cingulate — Memory Retrieval",
+  "G_cingul-Post-ventral": "Ventral Posterior Cingulate — Default Mode",
+  "G_cuneus": "Cuneus — Visual Processing",
+  "G_front_inf-Opercular": "Broca's Area (Opercular) — Speech Production",
+  "G_front_inf-Orbital": "Inferior Frontal (Orbital) — Language",
+  "G_front_inf-Triangul": "Broca's Area (Triangular) — Language Comprehension",
+  "G_front_middle": "Middle Frontal Gyrus — Working Memory",
+  "G_front_sup": "Superior Frontal — Executive Function",
+  "G_Ins_lg_and_S_cent_ins": "Insular Cortex — Emotional Awareness",
+  "G_insular_short": "Short Insular — Interoception",
+  "G_occipital_middle": "Middle Occipital — Visual Association",
+  "G_occipital_sup": "Superior Occipital — Visual Processing",
+  "G_oc-temp_lat-fusifor": "Fusiform Gyrus — Face & Word Recognition",
+  "G_oc-temp_med-Lingual": "Lingual Gyrus — Visual Memory",
+  "G_oc-temp_med-Parahip": "Parahippocampal — Memory Encoding",
+  "G_orbital": "Orbital Gyrus — Reward Processing",
+  "G_pariet_inf-Angular": "Angular Gyrus — Semantic Processing",
+  "G_pariet_inf-Supramar": "Supramarginal Gyrus — Language & Math",
+  "G_parietal_sup": "Superior Parietal — Spatial Reasoning",
+  "G_postcentral": "Somatosensory Cortex — Touch Processing",
+  "G_precentral": "Primary Motor Cortex — Movement",
+  "G_precuneus": "Precuneus — Self-Awareness & Imagery",
+  "G_rectus": "Gyrus Rectus — Personality & Judgment",
+  "G_subcallosal": "Subcallosal Gyrus — Emotional Regulation",
+  "G_temp_sup-G_T_transv": "Heschl's Gyrus — Auditory Processing",
+  "G_temp_sup-Lateral": "Superior Temporal — Language Comprehension",
+  "G_temp_sup-Plan_polar": "Planum Polare — Auditory Association",
+  "G_temp_sup-Plan_tempo": "Planum Temporale — Language Lateralization",
+  "G_temporal_inf": "Inferior Temporal — Object Recognition",
+  "G_temporal_middle": "Middle Temporal — Semantic Memory",
+  "Lat_Fis-ant-Horizont": "Lateral Fissure — Language Processing",
+  "Lat_Fis-ant-Vertical": "Lateral Fissure (Vertical) — Auditory",
+  "Lat_Fis-post": "Posterior Lateral Fissure — Auditory",
+  "Pole_occipital": "Occipital Pole — Primary Vision",
+  "Pole_temporal": "Temporal Pole — Social Cognition",
+  "S_calcarine": "Calcarine Sulcus — Primary Visual Cortex",
+  "S_central": "Central Sulcus — Motor/Sensory Boundary",
+  "S_cingul-Marginalis": "Cingulate Sulcus — Attention",
+  "S_circular_insula_ant": "Anterior Circular Insular — Emotion",
+  "S_circular_insula_inf": "Inferior Circular Insular — Visceral",
+  "S_circular_insula_sup": "Superior Circular Insular — Awareness",
+  "S_collat_transv_ant": "Anterior Collateral — Memory",
+  "S_collat_transv_post": "Posterior Collateral — Visual Memory",
+  "S_front_inf": "Inferior Frontal Sulcus — Cognitive Control",
+  "S_front_middle": "Middle Frontal Sulcus — Attention",
+  "S_front_sup": "Superior Frontal Sulcus — Planning",
+  "S_interm_prim-Jensen": "Intermediate Sulcus — Language",
+  "S_intrapariet_and_P_trans": "Intraparietal Sulcus — Numerical Cognition",
+  "S_oc_middle_and_Lunatus": "Middle Occipital Sulcus — Vision",
+  "S_oc_sup_and_transversal": "Superior Occipital Sulcus — Vision",
+  "S_oc-temp_lat": "Occipitotemporal Sulcus — Reading",
+  "S_oc-temp_med_and_Lingual": "Medial Occipitotemporal — Visual Memory",
+  "S_orbital_lateral": "Lateral Orbital Sulcus — Decision Making",
+  "S_orbital_med-olfact": "Medial Orbital — Olfaction & Reward",
+  "S_orbital-H_Shaped": "H-Shaped Orbital — Reward Evaluation",
+  "S_parieto_occipital": "Parieto-Occipital Sulcus — Visual-Spatial",
+  "S_pericallosal": "Pericallosal Sulcus — Interhemispheric",
+  "S_postcentral": "Postcentral Sulcus — Somatosensory",
+  "S_precentral-inf-part": "Inferior Precentral — Motor Planning",
+  "S_precentral-sup-part": "Superior Precentral — Motor Execution",
+  "S_suborbital": "Suborbital Sulcus — Emotional Processing",
+  "S_subparietal": "Subparietal Sulcus — Default Mode",
+  "S_temporal_inf": "Inferior Temporal Sulcus — Object Processing",
+  "S_temporal_sup": "Superior Temporal Sulcus — Social Cognition",
+  "S_temporal_transverse": "Transverse Temporal — Auditory",
+};
 
-function seededRandom(seed: number) {
-  let s = seed;
-  return () => {
-    s = (s * 16807 + 0) % 2147483647;
-    return (s - 1) / 2147483646;
-  };
+function friendlyName(raw: string): string {
+  return FRIENDLY_REGION_NAMES[raw] || raw.replace(/_/g, " ").replace(/^[GS]_/, "");
 }
 
-function createBrainGeometry(): THREE.BufferGeometry {
-  const geo = new THREE.SphereGeometry(1, 64, 48);
-  const pos = geo.attributes.position;
-  const normals = geo.attributes.normal;
-  const count = pos.count;
+// Hot-to-cold colormap matching Meta's TRIBE v2 demo (warm tones)
+function activationColor(value: number): [number, number, number] {
+  if (value < 0.2) return [0.15, 0.15, 0.18]; // dark gray (inactive)
+  if (value < 0.4) return [0.6, 0.3, 0.1];     // dark orange
+  if (value < 0.6) return [0.9, 0.4, 0.1];     // orange
+  if (value < 0.8) return [1.0, 0.6, 0.0];     // bright orange-yellow
+  return [1.0, 0.95, 0.3];                      // hot yellow
+}
 
-  for (let i = 0; i < count; i++) {
-    let x = pos.getX(i);
-    let y = pos.getY(i);
-    let z = pos.getZ(i);
+function lerpColor(a: [number, number, number], b: [number, number, number], t: number): [number, number, number] {
+  return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+}
 
-    const nx = normals.getX(i);
-    const ny = normals.getY(i);
-    const nz = normals.getZ(i);
-
-    // Elongate front-to-back
-    z *= 1.3;
-    // Flatten top slightly
-    if (y > 0.3) y *= 0.9;
-    // Widen at temples
-    const temple = Math.exp(-y * y * 3) * 0.15;
-    x *= 1.0 + temple;
-
-    // Central fissure (gap between hemispheres)
-    const fissureDepth = 0.08 * Math.exp(-x * x * 80) * (0.5 + 0.5 * Math.max(0, y));
-    y -= fissureDepth;
-
-    // Sulci (wrinkle-like grooves) — multiple frequency noise
-    const s1 = Math.sin(x * 12 + z * 8) * Math.cos(y * 10) * 0.03;
-    const s2 = Math.sin(x * 20 + y * 15 + z * 18) * 0.015;
-    const s3 = Math.sin(x * 35 + y * 25 - z * 30) * 0.008;
-    const sulci = (s1 + s2 + s3) * (0.6 + 0.4 * Math.max(0, y));
-
-    x += nx * sulci;
-    y += ny * sulci;
-    z += nz * sulci;
-
-    // Flatten bottom
-    if (y < -0.4) {
-      y = -0.4 + (y + 0.4) * 0.3;
+function smoothActivationColor(v: number): [number, number, number] {
+  const stops: { t: number; c: [number, number, number] }[] = [
+    { t: 0.0, c: [0.55, 0.53, 0.56] },   // gray (brain base)
+    { t: 0.15, c: [0.55, 0.53, 0.56] },   // still gray
+    { t: 0.3, c: [0.6, 0.2, 0.05] },      // dark red
+    { t: 0.5, c: [0.9, 0.3, 0.05] },      // red-orange
+    { t: 0.7, c: [1.0, 0.55, 0.0] },      // orange
+    { t: 0.85, c: [1.0, 0.8, 0.1] },      // yellow-orange
+    { t: 1.0, c: [1.0, 1.0, 0.4] },       // bright yellow
+  ];
+  for (let i = 0; i < stops.length - 1; i++) {
+    if (v <= stops[i + 1].t) {
+      const local = (v - stops[i].t) / (stops[i + 1].t - stops[i].t);
+      return lerpColor(stops[i].c, stops[i + 1].c, local);
     }
-
-    // Cerebellum bump at back-bottom
-    const cbDist = Math.sqrt(x * x + (y + 0.5) * (y + 0.5) + (z + 1.0) * (z + 1.0));
-    if (cbDist < 0.6) {
-      const cbBump = (0.6 - cbDist) * 0.25;
-      x += nx * cbBump;
-      y += ny * cbBump;
-      z += nz * cbBump;
-    }
-
-    // Frontal lobe bulge
-    if (z > 0.8) {
-      const frontBulge = (z - 0.8) * 0.12;
-      x *= 1.0 + frontBulge * 0.3;
-      y += frontBulge * 0.1;
-    }
-
-    pos.setXYZ(i, x, y, z);
   }
-
-  geo.computeVertexNormals();
-  return geo;
+  return stops[stops.length - 1].c;
 }
-
-const NODE_COUNT = 120;
-const nodeActivations = new Float32Array(NODE_COUNT);
 
 export default function BrainViewer({ activeTopic, topics, onTopicSelect }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<{
-    renderer: THREE.WebGLRenderer;
-    scene: THREE.Scene;
-    camera: THREE.PerspectiveCamera;
     brainMesh: THREE.Mesh;
-    glowMesh: THREE.Mesh;
-    particlesMesh: THREE.Points;
-    nodes: THREE.Vector3[];
-    frame: number;
-    clock: THREE.Clock;
-    targetColor: THREE.Color;
-    currentColor: THREE.Color;
-    activation: number;
-    targetActivation: number;
-    mouse: { x: number; y: number; down: boolean; prevX: number; prevY: number };
-    rotY: number;
-    rotX: number;
-    targetRotY: number;
-    targetRotX: number;
-    autoRotate: boolean;
+    activationData: Float32Array | null;
+    targetActivation: Float32Array | null;
+    sulcData: Float32Array | null;
+    animProgress: number;
   } | null>(null);
   const [tribeAvailable, setTribeAvailable] = useState(false);
-  const [hoveredRegion, setHoveredRegion] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [predictionSource, setPredictionSource] = useState<"tribe" | "procedural" | null>(null);
+  const [topRegions, setTopRegions] = useState<TopRegion[]>([]);
+  const [meshLoaded, setMeshLoaded] = useState(false);
+  const [showAllTopics, setShowAllTopics] = useState(false);
 
+  // Load mesh and set up Three.js scene
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setSize(container.clientWidth, container.clientHeight);
-    renderer.setClearColor(0x000000, 0);
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.2;
-    container.appendChild(renderer.domElement);
+    const w = container.clientWidth;
+    const h = 500;
 
     const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(35, w / h, 0.1, 100);
+    camera.position.set(0, 0.2, 4.5);
 
-    const camera = new THREE.PerspectiveCamera(
-      40,
-      container.clientWidth / container.clientHeight,
-      0.1,
-      100
-    );
-    camera.position.set(0, 0.5, 4);
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(w, h);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setClearColor(0x08080f, 1);
+    container.appendChild(renderer.domElement);
 
-    // Lighting
-    const ambientLight = new THREE.AmbientLight(0x404060, 0.8);
+    // Lighting — match Meta's demo look
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
     scene.add(ambientLight);
+    const dirLight1 = new THREE.DirectionalLight(0xffffff, 0.8);
+    dirLight1.position.set(2, 3, 4);
+    scene.add(dirLight1);
+    const dirLight2 = new THREE.DirectionalLight(0x8888ff, 0.3);
+    dirLight2.position.set(-3, -1, -2);
+    scene.add(dirLight2);
 
-    const keyLight = new THREE.DirectionalLight(0xffffff, 1.5);
-    keyLight.position.set(2, 3, 4);
-    scene.add(keyLight);
+    // Load the real fsaverage5 mesh
+    let brainMesh: THREE.Mesh;
+    let sulcData: Float32Array | null = null;
+    let vertexCount = 0;
 
-    const fillLight = new THREE.DirectionalLight(0x6644aa, 0.4);
-    fillLight.position.set(-3, 1, -2);
-    scene.add(fillLight);
+    Promise.all([
+      fetch("/fsaverage5.json").then((r) => r.json()),
+      fetch("/fsaverage5_sulc.json").then((r) => r.json()),
+    ]).then(([meshData, sulcArray]) => {
+      const vertices = new Float32Array(meshData.vertices);
+      const indices = new Uint32Array(meshData.faces);
+      vertexCount = meshData.total_vertices;
 
-    const rimLight = new THREE.DirectionalLight(0x7c3aed, 0.6);
-    rimLight.position.set(0, -1, -3);
-    scene.add(rimLight);
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute("position", new THREE.BufferAttribute(vertices, 3));
+      geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+      geometry.computeVertexNormals();
 
-    // Brain mesh
-    const brainGeo = createBrainGeometry();
-    const vertCount = brainGeo.attributes.position.count;
-    const colors = new Float32Array(vertCount * 3);
-    const baseColor = new THREE.Color(0.75, 0.65, 0.7);
-    for (let i = 0; i < vertCount; i++) {
-      colors[i * 3] = baseColor.r;
-      colors[i * 3 + 1] = baseColor.g;
-      colors[i * 3 + 2] = baseColor.b;
-    }
-    brainGeo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+      // Set up vertex colors from sulcal depth (gray brain look)
+      sulcData = new Float32Array(sulcArray);
+      const colors = new Float32Array(vertexCount * 3);
+      for (let i = 0; i < vertexCount; i++) {
+        const s = sulcData[i];
+        // Sulci (deep) = darker, Gyri (ridges) = lighter — like a real brain
+        const gray = 0.45 + (1 - s) * 0.2;
+        colors[i * 3] = gray;
+        colors[i * 3 + 1] = gray * 0.96;
+        colors[i * 3 + 2] = gray * 1.02;
+      }
+      geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
 
-    const brainMat = new THREE.MeshStandardMaterial({
-      vertexColors: true,
-      roughness: 0.65,
-      metalness: 0.05,
-      envMapIntensity: 0.3,
+      const material = new THREE.MeshPhongMaterial({
+        vertexColors: true,
+        shininess: 20,
+        specular: new THREE.Color(0x222222),
+      });
+
+      brainMesh = new THREE.Mesh(geometry, material);
+      // Rotate to match standard neuroimaging view (nose forward)
+      brainMesh.rotation.x = -Math.PI / 2;
+      brainMesh.rotation.z = Math.PI;
+      scene.add(brainMesh);
+
+      sceneRef.current = {
+        brainMesh,
+        activationData: new Float32Array(vertexCount).fill(0),
+        targetActivation: null,
+        sulcData,
+        animProgress: 0,
+      };
+
+      setMeshLoaded(true);
     });
-
-    const brainMesh = new THREE.Mesh(brainGeo, brainMat);
-    scene.add(brainMesh);
-
-    // Glow/atmosphere mesh (slightly larger, transparent)
-    const glowGeo = createBrainGeometry();
-    const glowMat = new THREE.ShaderMaterial({
-      uniforms: {
-        uColor: { value: new THREE.Color(0x7c3aed) },
-        uIntensity: { value: 0.0 },
-        viewVector: { value: camera.position },
-      },
-      vertexShader: `
-        uniform vec3 viewVector;
-        varying float vIntensity;
-        void main() {
-          vec3 vNormal = normalize(normalMatrix * normal);
-          vec3 vNormel = normalize(normalMatrix * viewVector);
-          vIntensity = pow(0.7 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 2.5);
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position * 1.04, 1.0);
-        }
-      `,
-      fragmentShader: `
-        uniform vec3 uColor;
-        uniform float uIntensity;
-        varying float vIntensity;
-        void main() {
-          float alpha = vIntensity * uIntensity * 0.6;
-          gl_FragColor = vec4(uColor, alpha);
-        }
-      `,
-      transparent: true,
-      blending: THREE.AdditiveBlending,
-      side: THREE.FrontSide,
-      depthWrite: false,
-    });
-    const glowMesh = new THREE.Mesh(glowGeo, glowMat);
-    scene.add(glowMesh);
-
-    // Floating particles around brain
-    const particleCount = 200;
-    const particlePositions = new Float32Array(particleCount * 3);
-    const particleSizes = new Float32Array(particleCount);
-    const particleColors = new Float32Array(particleCount * 3);
-    const rand = seededRandom(42);
-
-    for (let i = 0; i < particleCount; i++) {
-      const theta = rand() * Math.PI * 2;
-      const phi = Math.acos(2 * rand() - 1);
-      const r = 1.8 + rand() * 1.5;
-      particlePositions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
-      particlePositions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta) * 0.7;
-      particlePositions[i * 3 + 2] = r * Math.cos(phi);
-      particleSizes[i] = 1.5 + rand() * 3;
-      particleColors[i * 3] = 0.4;
-      particleColors[i * 3 + 1] = 0.3;
-      particleColors[i * 3 + 2] = 0.6;
-    }
-
-    const particleGeo = new THREE.BufferGeometry();
-    particleGeo.setAttribute("position", new THREE.BufferAttribute(particlePositions, 3));
-    particleGeo.setAttribute("size", new THREE.BufferAttribute(particleSizes, 1));
-    particleGeo.setAttribute("color", new THREE.BufferAttribute(particleColors, 3));
-
-    const particleMat = new THREE.ShaderMaterial({
-      uniforms: {
-        uTime: { value: 0 },
-        uPixelRatio: { value: renderer.getPixelRatio() },
-      },
-      vertexShader: `
-        attribute float size;
-        attribute vec3 color;
-        varying vec3 vColor;
-        uniform float uTime;
-        uniform float uPixelRatio;
-        void main() {
-          vColor = color;
-          vec3 pos = position;
-          pos.y += sin(uTime * 0.5 + position.x * 2.0) * 0.05;
-          pos.x += cos(uTime * 0.3 + position.z * 1.5) * 0.03;
-          vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
-          gl_PointSize = size * uPixelRatio * (2.0 / -mvPosition.z);
-          gl_Position = projectionMatrix * mvPosition;
-        }
-      `,
-      fragmentShader: `
-        varying vec3 vColor;
-        void main() {
-          float d = length(gl_PointCoord - vec2(0.5));
-          if (d > 0.5) discard;
-          float alpha = smoothstep(0.5, 0.0, d) * 0.5;
-          gl_FragColor = vec4(vColor, alpha);
-        }
-      `,
-      transparent: true,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-    });
-
-    const particlesMesh = new THREE.Points(particleGeo, particleMat);
-    scene.add(particlesMesh);
-
-    // Build node positions on the brain surface for activation mapping
-    const nodes: THREE.Vector3[] = [];
-    const brainPos = brainGeo.attributes.position;
-    const step = Math.floor(vertCount / NODE_COUNT);
-    for (let i = 0; i < NODE_COUNT; i++) {
-      const idx = Math.min(i * step, vertCount - 1);
-      nodes.push(new THREE.Vector3(
-        brainPos.getX(idx),
-        brainPos.getY(idx),
-        brainPos.getZ(idx)
-      ));
-    }
-    nodeActivations.fill(0);
-
-    const clock = new THREE.Clock();
-    const targetColor = new THREE.Color(0x7c3aed);
-    const currentColor = new THREE.Color(0x7c3aed);
-    const mouse = { x: 0, y: 0, down: false, prevX: 0, prevY: 0 };
-
-    let rotY = 0;
-    let rotX = 0.1;
-    let targetRotY = 0;
-    let targetRotX = 0.1;
-    let autoRotate = true;
 
     // Mouse interaction
+    const mouse = { down: false, prevX: 0, prevY: 0 };
+    let rotY = 0;
+    let rotX = -0.2;
+    let targetRotY = 0;
+    let targetRotX = -0.2;
+    let autoRotate = true;
+
     const onMouseDown = (e: MouseEvent) => {
       mouse.down = true;
       mouse.prevX = e.clientX;
@@ -323,11 +254,9 @@ export default function BrainViewer({ activeTopic, topics, onTopicSelect }: Prop
     };
     const onMouseMove = (e: MouseEvent) => {
       if (mouse.down) {
-        const dx = e.clientX - mouse.prevX;
-        const dy = e.clientY - mouse.prevY;
-        targetRotY += dx * 0.005;
-        targetRotX += dy * 0.005;
-        targetRotX = Math.max(-0.5, Math.min(0.5, targetRotX));
+        targetRotY += (e.clientX - mouse.prevX) * 0.005;
+        targetRotX += (e.clientY - mouse.prevY) * 0.005;
+        targetRotX = Math.max(-0.8, Math.min(0.8, targetRotX));
         mouse.prevX = e.clientX;
         mouse.prevY = e.clientY;
       }
@@ -338,7 +267,7 @@ export default function BrainViewer({ activeTopic, topics, onTopicSelect }: Prop
     };
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
-      camera.position.z = Math.max(2.5, Math.min(6, camera.position.z + e.deltaY * 0.005));
+      camera.position.z = Math.max(2.5, Math.min(7, camera.position.z + e.deltaY * 0.005));
     };
 
     renderer.domElement.addEventListener("mousedown", onMouseDown);
@@ -347,7 +276,7 @@ export default function BrainViewer({ activeTopic, topics, onTopicSelect }: Prop
     renderer.domElement.addEventListener("mouseleave", onMouseUp);
     renderer.domElement.addEventListener("wheel", onWheel, { passive: false });
 
-    // Touch support
+    // Touch
     const onTouchStart = (e: TouchEvent) => {
       if (e.touches.length === 1) {
         mouse.down = true;
@@ -358,11 +287,9 @@ export default function BrainViewer({ activeTopic, topics, onTopicSelect }: Prop
     };
     const onTouchMove = (e: TouchEvent) => {
       if (mouse.down && e.touches.length === 1) {
-        const dx = e.touches[0].clientX - mouse.prevX;
-        const dy = e.touches[0].clientY - mouse.prevY;
-        targetRotY += dx * 0.005;
-        targetRotX += dy * 0.005;
-        targetRotX = Math.max(-0.5, Math.min(0.5, targetRotX));
+        targetRotY += (e.touches[0].clientX - mouse.prevX) * 0.005;
+        targetRotX += (e.touches[0].clientY - mouse.prevY) * 0.005;
+        targetRotX = Math.max(-0.8, Math.min(0.8, targetRotX));
         mouse.prevX = e.touches[0].clientX;
         mouse.prevY = e.touches[0].clientY;
       }
@@ -376,103 +303,59 @@ export default function BrainViewer({ activeTopic, topics, onTopicSelect }: Prop
     renderer.domElement.addEventListener("touchend", onTouchEnd);
 
     let frame = 0;
-    const baseVertexColor = new THREE.Color(0.75, 0.65, 0.7);
-
     const animate = () => {
       frame = requestAnimationFrame(animate);
-      const t = clock.getElapsedTime();
       const ref = sceneRef.current;
-      if (!ref) return;
+      if (!ref || !ref.brainMesh) return;
 
-      currentColor.lerp(ref.targetColor, 0.03);
-      ref.activation += (ref.targetActivation - ref.activation) * 0.04;
-
-      (particleMat.uniforms.uTime as { value: number }).value = t;
-
-      // Update glow
-      (glowMat.uniforms.uColor as { value: THREE.Color }).value.copy(currentColor);
-      (glowMat.uniforms.uIntensity as { value: number }).value = ref.activation;
-
-      // Update brain vertex colors based on activation
-      const colorAttr = brainGeo.getAttribute("color") as THREE.BufferAttribute;
-      const posAttr = brainGeo.getAttribute("position") as THREE.BufferAttribute;
-
-      for (let i = 0; i < vertCount; i++) {
-        const vx = posAttr.getX(i);
-        const vy = posAttr.getY(i);
-        const vz = posAttr.getZ(i);
-
-        let maxAct = 0;
-        for (let n = 0; n < NODE_COUNT; n++) {
-          if (nodeActivations[n] < 0.01) continue;
-          const dx = vx - nodes[n].x;
-          const dy = vy - nodes[n].y;
-          const dz = vz - nodes[n].z;
-          const dist2 = dx * dx + dy * dy + dz * dz;
-          const act = nodeActivations[n] * Math.exp(-dist2 * 4);
-          if (act > maxAct) maxAct = act;
-        }
-
-        const blend = maxAct * ref.activation;
-        const pulse = Math.sin(t * 2 + i * 0.01) * 0.5 + 0.5;
-
-        const r = baseVertexColor.r + blend * (currentColor.r - baseVertexColor.r) + blend * pulse * 0.15;
-        const g = baseVertexColor.g + blend * (currentColor.g - baseVertexColor.g) + blend * pulse * 0.1;
-        const b = baseVertexColor.b + blend * (currentColor.b - baseVertexColor.b) + blend * pulse * 0.1;
-
-        colorAttr.setXYZ(i, Math.min(1, r), Math.min(1, g), Math.min(1, b));
-      }
-      colorAttr.needsUpdate = true;
-
-      // Update particle colors
-      const pc = particleGeo.getAttribute("color") as THREE.BufferAttribute;
-      for (let i = 0; i < particleCount; i++) {
-        const blend = ref.activation * 0.5;
-        pc.setXYZ(i,
-          0.4 + blend * currentColor.r,
-          0.3 + blend * currentColor.g,
-          0.6 + blend * currentColor.b
-        );
-      }
-      pc.needsUpdate = true;
-
-      // Rotation
-      if (autoRotate) {
-        targetRotY += 0.003;
-      }
+      // Smooth rotation
+      if (autoRotate) targetRotY += 0.002;
       rotY += (targetRotY - rotY) * 0.08;
       rotX += (targetRotX - rotX) * 0.08;
 
-      brainMesh.rotation.y = rotY;
-      brainMesh.rotation.x = rotX;
-      glowMesh.rotation.y = rotY;
-      glowMesh.rotation.x = rotX;
-      particlesMesh.rotation.y = rotY * 0.3;
+      ref.brainMesh.rotation.x = -Math.PI / 2 + rotX;
+      ref.brainMesh.rotation.z = Math.PI + rotY;
+
+      // Animate vertex colors toward target
+      if (ref.targetActivation && ref.sulcData) {
+        ref.animProgress = Math.min(1, ref.animProgress + 0.025);
+        const t = ref.animProgress;
+        const colorAttr = ref.brainMesh.geometry.getAttribute("color") as THREE.BufferAttribute;
+        const count = ref.sulcData.length;
+
+        for (let i = 0; i < count; i++) {
+          const target = ref.targetActivation[i];
+          const current = ref.activationData![i];
+          const val = current + (target - current) * t;
+          ref.activationData![i] = val;
+
+          if (val > 0.15) {
+            const [r, g, b] = smoothActivationColor(val);
+            colorAttr.setXYZ(i, r, g, b);
+          } else {
+            const s = ref.sulcData[i];
+            const gray = 0.45 + (1 - s) * 0.2;
+            colorAttr.setXYZ(i, gray, gray * 0.96, gray * 1.02);
+          }
+        }
+        colorAttr.needsUpdate = true;
+      }
 
       renderer.render(scene, camera);
     };
-
     animate();
 
-    const observer = new ResizeObserver(() => {
-      if (!container) return;
-      renderer.setSize(container.clientWidth, container.clientHeight);
-      camera.aspect = container.clientWidth / container.clientHeight;
+    const onResize = () => {
+      const nw = container.clientWidth;
+      camera.aspect = nw / h;
       camera.updateProjectionMatrix();
-    });
-    observer.observe(container);
-
-    sceneRef.current = {
-      renderer, scene, camera, brainMesh, glowMesh, particlesMesh,
-      nodes, frame, clock,
-      targetColor, currentColor,
-      activation: 0, targetActivation: 0,
-      mouse, rotY, rotX, targetRotY, targetRotX, autoRotate,
+      renderer.setSize(nw, h);
     };
+    window.addEventListener("resize", onResize);
 
     return () => {
       cancelAnimationFrame(frame);
-      observer.disconnect();
+      window.removeEventListener("resize", onResize);
       renderer.domElement.removeEventListener("mousedown", onMouseDown);
       renderer.domElement.removeEventListener("mousemove", onMouseMove);
       renderer.domElement.removeEventListener("mouseup", onMouseUp);
@@ -485,51 +368,34 @@ export default function BrainViewer({ activeTopic, topics, onTopicSelect }: Prop
       if (container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
       }
-      sceneRef.current = null;
     };
   }, []);
 
-  const applyProceduralActivation = useCallback((topic: Topic) => {
-    if (!sceneRef.current) return;
-    const rand = seededRandom(topic.name.length * 137 + topic.count);
-    const { nodes } = sceneRef.current;
-
-    const hotspots: THREE.Vector3[] = [];
-    const numHotspots = 2 + Math.floor(rand() * 3);
-    for (let h = 0; h < numHotspots; h++) {
-      const idx = Math.floor(rand() * NODE_COUNT);
-      hotspots.push(nodes[idx].clone());
+  const applyActivation = useCallback((activation: number[]) => {
+    const ref = sceneRef.current;
+    if (!ref) return;
+    const target = new Float32Array(activation.length);
+    for (let i = 0; i < activation.length; i++) {
+      target[i] = activation[i];
     }
-
-    for (let i = 0; i < NODE_COUNT; i++) {
-      let maxAct = 0;
-      for (const hs of hotspots) {
-        const dist = nodes[i].distanceTo(hs);
-        const act = Math.exp(-dist * dist * 1.5);
-        maxAct = Math.max(maxAct, act);
-      }
-      nodeActivations[i] = maxAct * (0.5 + rand() * 0.5);
-    }
+    ref.targetActivation = target;
+    ref.animProgress = 0;
   }, []);
 
-  const applyTribeActivation = useCallback((activation: number[]) => {
-    const step = Math.floor(activation.length / NODE_COUNT);
-    const min = Math.min(...activation);
-    const max = Math.max(...activation);
-    const range = max - min || 1;
-
-    for (let i = 0; i < NODE_COUNT; i++) {
-      const idx = Math.min(i * step, activation.length - 1);
-      nodeActivations[i] = (activation[idx] - min) / range;
-    }
+  const clearActivation = useCallback(() => {
+    const ref = sceneRef.current;
+    if (!ref || !ref.sulcData) return;
+    const count = ref.sulcData.length;
+    ref.targetActivation = new Float32Array(count).fill(0);
+    ref.animProgress = 0;
+    setTopRegions([]);
+    setPredictionSource(null);
   }, []);
 
   const activateForTopic = useCallback(async (topic: Topic) => {
     if (!sceneRef.current) return;
-
-    const color = new THREE.Color(DOMAIN_COLORS[topic.domain]);
-    sceneRef.current.targetColor = color;
-    sceneRef.current.targetActivation = 1;
+    setLoading(true);
+    setTopRegions([]);
 
     try {
       const res = await fetch("/api/brain", {
@@ -537,124 +403,192 @@ export default function BrainViewer({ activeTopic, topics, onTopicSelect }: Prop
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: topic.name }),
       });
-      const data: { activation: number[] | null } = await res.json();
+      const data = await res.json();
       if (data.activation && data.activation.length > 0) {
-        applyTribeActivation(data.activation);
+        applyActivation(data.activation);
         setTribeAvailable(true);
+        setPredictionSource("tribe");
+        if (data.top_regions) setTopRegions(data.top_regions);
+        setLoading(false);
         return;
       }
     } catch {
       // Sidecar not running
     }
 
-    applyProceduralActivation(topic);
-  }, [applyTribeActivation, applyProceduralActivation]);
-
-  const deactivate = useCallback(() => {
-    if (!sceneRef.current) return;
-    sceneRef.current.targetColor = new THREE.Color(0x7c3aed);
-    sceneRef.current.targetActivation = 0;
-    setHoveredRegion(null);
-  }, []);
+    setPredictionSource("procedural");
+    setLoading(false);
+  }, [applyActivation]);
 
   useEffect(() => {
     if (activeTopic) {
       activateForTopic(activeTopic);
-      setHoveredRegion(activeTopic.name);
     } else {
-      deactivate();
+      clearActivation();
     }
-  }, [activeTopic, activateForTopic, deactivate]);
-
-  const topSorted = [...topics].sort((a, b) => b.count - a.count).slice(0, 8);
+  }, [activeTopic, activateForTopic, clearActivation]);
 
   return (
-    <section className="space-y-6">
-      <div className="flex items-center gap-3 mb-2">
-        <div className="w-2 h-2 rounded-full bg-purple-500" style={{ boxShadow: '0 0 8px #7c3aed' }} />
-        <h2 className="text-sm tracking-[0.2em] uppercase text-white/60 font-bold">
-          Neural Activation Map
-        </h2>
-        <div className="h-px flex-1 bg-gradient-to-r from-purple-500/20 to-transparent" />
+    <section className="space-y-5">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-3">
+          <div className="w-2 h-2 rounded-full bg-orange-500/60 animate-glow-pulse" />
+          <h2 className="text-sm tracking-[0.2em] uppercase text-white/50 font-bold">
+            Neural Activation Map
+          </h2>
+        </div>
         {tribeAvailable && (
-          <span className="text-xs text-purple-400/60 font-medium">
+          <span className="text-xs text-emerald-400/60 tracking-wider">
             Powered by Meta TRIBE v2
           </span>
         )}
       </div>
 
-      <div className="rounded-2xl overflow-hidden border border-purple-500/15 relative" style={{ background: 'linear-gradient(135deg, #08080f, #0d0a18)' }}>
-        {/* Brain canvas */}
-        <div ref={containerRef} className="w-full h-[500px] cursor-grab active:cursor-grabbing" />
+      <div className="relative rounded-2xl overflow-hidden border border-white/[0.06] bg-[#08080f]">
+        <div ref={containerRef} className="w-full h-[500px]" />
 
-        {/* Active topic overlay */}
-        {activeTopic && (
-          <div className="absolute top-5 left-6 animate-fade-in pointer-events-none">
+        {/* Overlays */}
+        {activeTopic && predictionSource === "tribe" && (
+          <div className="absolute top-5 left-6 animate-fade-in pointer-events-none max-w-[300px]">
             <div className="flex items-center gap-2 mb-1">
-              <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: DOMAIN_COLORS[activeTopic.domain], boxShadow: `0 0 8px ${DOMAIN_COLORS[activeTopic.domain]}` }} />
-              <span className="text-xs font-bold uppercase tracking-wider" style={{ color: DOMAIN_COLORS[activeTopic.domain] }}>
+              <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: DOMAIN_COLORS[activeTopic.domain] }} />
+              <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: DOMAIN_COLORS[activeTopic.domain] }}>
                 {activeTopic.domain}
               </span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-bold tracking-wider">
+                TRIBE v2
+              </span>
             </div>
-            <p className="text-lg font-bold text-white/90">{activeTopic.name}</p>
-            <p className="text-xs text-white/40 mt-1">
-              {tribeAvailable ? "fMRI-predicted activation pattern" : "Estimated neural activation"}
+            <p className="text-base font-bold text-white/90">{activeTopic.name}</p>
+            <p className="text-[10px] text-white/35 mt-1">
+              fMRI-predicted · 20,484 cortical vertices · fsaverage5
             </p>
           </div>
         )}
 
-        {/* Instructions */}
-        {!activeTopic && (
+        {activeTopic && predictionSource === "procedural" && (
+          <div className="absolute top-5 left-6 animate-fade-in pointer-events-none">
+            <p className="text-sm text-white/50">{activeTopic.name}</p>
+            <p className="text-[10px] text-white/25 mt-1">TRIBE v2 sidecar not connected</p>
+          </div>
+        )}
+
+        {loading && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="flex items-center gap-3 px-5 py-2.5 rounded-full bg-black/70 backdrop-blur-sm border border-white/[0.06]">
+              <div className="w-4 h-4 rounded-full border-2 border-orange-500/30 border-t-orange-500 animate-spin" />
+              <span className="text-xs text-white/60">Predicting brain activation...</span>
+            </div>
+          </div>
+        )}
+
+        {!activeTopic && !loading && meshLoaded && (
           <div className="absolute top-5 left-6 pointer-events-none animate-fade-in">
-            <p className="text-sm text-white/40">
-              Select a topic below to see brain activation
-            </p>
-            <p className="text-xs text-white/20 mt-1">
-              Drag to rotate &middot; Scroll to zoom
-            </p>
+            <p className="text-sm text-white/50">Select a topic below to see brain activation</p>
+            <p className="text-xs text-white/25 mt-1">Drag to rotate · Scroll to zoom</p>
           </div>
         )}
 
-        {/* Legend */}
-        <div className="absolute bottom-4 right-5 flex items-center gap-3 pointer-events-none">
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-1.5 rounded-full" style={{ background: 'linear-gradient(to right, #7c3aed, #ec4899)' }} />
-            <span className="text-[10px] text-white/30">
-              {tribeAvailable ? "fMRI prediction" : "Activation intensity"}
+        {/* Color scale legend */}
+        <div className="absolute bottom-4 right-5 flex items-center gap-2 pointer-events-none">
+          <span className="text-[10px] text-white/25">Low</span>
+          <div className="w-24 h-2 rounded-full" style={{
+            background: "linear-gradient(to right, #8a8890, #993310, #e64d0a, #ff8c00, #ffe066)"
+          }} />
+          <span className="text-[10px] text-white/25">High</span>
+        </div>
+
+        {/* TRIBE v2 status */}
+        <div className="absolute bottom-4 left-5 pointer-events-none">
+          {tribeAvailable ? (
+            <div className="flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-[10px] text-emerald-400/60 font-bold tracking-wider">
+                Meta TRIBE v2 · fsaverage5
+              </span>
+            </div>
+          ) : meshLoaded ? (
+            <span className="text-[10px] text-white/15">
+              Start TRIBE v2 sidecar for real fMRI predictions
             </span>
-          </div>
+          ) : null}
         </div>
       </div>
 
-      {/* Topic chips — click to activate brain */}
+      {/* Top activated regions */}
+      {topRegions.length > 0 && predictionSource === "tribe" && (
+        <div className="glass rounded-xl p-5 space-y-3 animate-slide-up">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">
+              Most Activated Brain Regions
+            </span>
+            <div className="h-px flex-1 bg-gradient-to-r from-orange-500/15 to-transparent" />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {topRegions.map((region, i) => (
+              <div key={region.id} className="flex items-center gap-3 px-3 py-2 rounded-lg bg-white/[0.02] border border-white/[0.04]">
+                <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold" style={{
+                  background: `rgba(${Math.round(smoothActivationColor(region.mean_activation)[0] * 255)}, ${Math.round(smoothActivationColor(region.mean_activation)[1] * 255)}, ${Math.round(smoothActivationColor(region.mean_activation)[2] * 255)}, 0.3)`,
+                  color: `rgb(${Math.round(smoothActivationColor(region.mean_activation)[0] * 255)}, ${Math.round(smoothActivationColor(region.mean_activation)[1] * 255)}, ${Math.round(smoothActivationColor(region.mean_activation)[2] * 255)})`,
+                }}>
+                  {i + 1}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-white/70 truncate">{friendlyName(region.name)}</p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <div className="flex-1 h-1 bg-white/[0.05] rounded-full overflow-hidden">
+                      <div className="h-full rounded-full" style={{
+                        width: `${region.mean_activation * 100}%`,
+                        background: `linear-gradient(to right, #993310, #ff8c00, #ffe066)`,
+                      }} />
+                    </div>
+                    <span className="text-[10px] text-white/30 font-data w-8 text-right">
+                      {(region.mean_activation * 100).toFixed(0)}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Topic chips */}
       <div className="flex flex-wrap gap-2">
-        {topSorted.map((topic, idx) => {
-          const color = DOMAIN_COLORS[topic.domain];
+        {(showAllTopics ? topics : topics.slice(0, 8)).map((topic) => {
           const isActive = activeTopic?.name === topic.name;
+          const color = DOMAIN_COLORS[topic.domain];
           return (
             <button
-              key={`${topic.name}-${idx}`}
+              key={topic.name}
               onClick={() => onTopicSelect(isActive ? null : topic)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-300 border ${
-                isActive
-                  ? "text-white scale-105"
-                  : "text-white/60 hover:text-white/90 hover:scale-[1.02]"
-              }`}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs transition-all duration-300 press-effect"
               style={{
-                borderColor: isActive ? `${color}88` : `${color}22`,
-                background: isActive ? `${color}25` : `${color}08`,
-                boxShadow: isActive ? `0 0 20px ${color}33` : "none",
+                border: `1px solid ${isActive ? color : "rgba(255,255,255,0.08)"}`,
+                background: isActive ? `${color}15` : "transparent",
+                color: isActive ? color : "rgba(255,255,255,0.5)",
               }}
             >
-              {topic.name}
-              <span className="text-white/25 ml-1.5">{topic.count}&times;</span>
+              <span>{topic.name}</span>
+              <span className="text-white/25 font-data">{topic.count}&times;</span>
             </button>
           );
         })}
-        {topics.length > 8 && (
-          <span className="px-3 py-1.5 text-xs text-white/25">
-            +{topics.length - 8} more below
-          </span>
+        {!showAllTopics && topics.length > 8 && (
+          <button
+            onClick={() => setShowAllTopics(true)}
+            className="text-xs text-white/30 hover:text-white/60 self-center px-3 py-1.5 rounded-full border border-white/[0.06] hover:border-white/[0.15] transition-all duration-300"
+          >
+            +{topics.length - 8} more
+          </button>
+        )}
+        {showAllTopics && topics.length > 8 && (
+          <button
+            onClick={() => setShowAllTopics(false)}
+            className="text-xs text-white/30 hover:text-white/60 self-center px-3 py-1.5 rounded-full border border-white/[0.06] hover:border-white/[0.15] transition-all duration-300"
+          >
+            show less
+          </button>
         )}
       </div>
     </section>

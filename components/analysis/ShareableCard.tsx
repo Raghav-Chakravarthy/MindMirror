@@ -10,9 +10,11 @@ interface Props {
 export default function ShareableCard({ card }: Props) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
   async function handleDownload() {
     if (!cardRef.current) return;
+    setDownloading(true);
     const html2canvas = (await import("html2canvas")).default;
     const canvas = await html2canvas(cardRef.current, {
       backgroundColor: "#050508",
@@ -22,6 +24,7 @@ export default function ShareableCard({ card }: Props) {
     link.download = "mindmirror-card.png";
     link.href = canvas.toDataURL("image/png");
     link.click();
+    setDownloading(false);
   }
 
   async function handleCopyImage() {
@@ -55,18 +58,19 @@ export default function ShareableCard({ card }: Props) {
           </h2>
           <div className="h-px w-16 bg-gradient-to-r from-pink-500/20 to-transparent" />
         </div>
-        <div className="flex gap-4">
+        <div className="flex gap-3">
           <button
             onClick={handleCopyImage}
-            className="text-xs text-white/40 hover:text-white transition-colors tracking-wider font-bold uppercase"
+            className="text-xs px-4 py-2 rounded-full border border-white/[0.08] text-white/40 hover:text-white hover:border-white/20 hover:bg-white/[0.04] transition-all duration-300 tracking-wider font-bold uppercase press-effect"
           >
-            {copied ? "Copied!" : "Copy Image"}
+            {copied ? "✓ Copied!" : "Copy Image"}
           </button>
           <button
             onClick={handleDownload}
-            className="text-xs text-white/40 hover:text-white transition-colors tracking-wider font-bold uppercase"
+            disabled={downloading}
+            className="text-xs px-4 py-2 rounded-full border border-purple-500/20 bg-purple-500/10 text-purple-300 hover:bg-purple-500/20 hover:border-purple-500/40 transition-all duration-300 tracking-wider font-bold uppercase press-effect disabled:opacity-50"
           >
-            Download PNG
+            {downloading ? "Exporting..." : "Download PNG"}
           </button>
         </div>
       </div>
@@ -74,7 +78,7 @@ export default function ShareableCard({ card }: Props) {
       <div className="flex justify-center">
         <div
           ref={cardRef}
-          className="rounded-2xl p-10 sm:p-12 space-y-8 w-[480px] relative overflow-hidden"
+          className="rounded-2xl p-10 sm:p-12 space-y-8 w-[480px] relative overflow-hidden transition-all duration-500 hover:scale-[1.01]"
           style={{
             boxShadow: `0 0 80px ${card.archetype.color}18, 0 0 30px ${card.archetype.color}0c`,
             border: `1px solid ${card.archetype.color}33`,

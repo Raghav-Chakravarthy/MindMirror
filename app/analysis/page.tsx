@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { MindMirrorResult, Conversation, Topic } from "@/lib/types";
@@ -26,12 +26,47 @@ const BrainViewer = dynamic(() => import("@/components/analysis/BrainViewer"), {
   ),
 });
 
+function RevealSection({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setTimeout(() => setVisible(true), delay);
+          observer.unobserve(el);
+        }
+      },
+      { threshold: 0.1, rootMargin: "0px 0px -60px 0px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [delay]);
+
+  return (
+    <div
+      ref={ref}
+      style={{
+        opacity: visible ? 1 : 0,
+        transform: visible ? "translateY(0)" : "translateY(32px)",
+        transition: `opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1) ${delay}ms, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1) ${delay}ms`,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
 export default function AnalysisPage() {
   const router = useRouter();
   const [result, setResult] = useState<MindMirrorResult | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeTopic, setActiveTopic] = useState<Topic | null>(null);
   const [geminiData, setGeminiData] = useState<Record<string, unknown> | null>(null);
+  const [scrollProgress, setScrollProgress] = useState(0);
 
   useEffect(() => {
     const raw = sessionStorage.getItem("mindmirror_result");
@@ -41,21 +76,58 @@ export default function AnalysisPage() {
       router.replace("/");
       return;
     }
-    setResult(JSON.parse(raw));
+    const parsed: MindMirrorResult = JSON.parse(raw);
+    setResult(parsed);
     if (rawConvs) setConversations(JSON.parse(rawConvs));
     if (rawGemini) setGeminiData(JSON.parse(rawGemini));
+
+    if (parsed.TOPICS?.length) {
+      const topicNames = parsed.TOPICS.map((t) => t.name);
+      fetch("/api/brain/warmup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ texts: topicNames }),
+      }).catch(() => {});
+    }
   }, [router]);
+
+  const handleScroll = useCallback(() => {
+    const scrollTop = window.scrollY;
+    const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    setScrollProgress(docHeight > 0 ? scrollTop / docHeight : 0);
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [handleScroll]);
 
   if (!result) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="w-3 h-3 rounded-full bg-purple-500 animate-pulse" />
+        <div className="relative w-16 h-16">
+          <div className="absolute inset-0 rounded-full bg-purple-500/10 animate-ping" style={{ animationDuration: '2s' }} />
+          <div className="absolute inset-4 rounded-full bg-purple-500/20 animate-pulse" />
+          <div className="absolute inset-[38%] rounded-full bg-purple-400" />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen noise-bg">
+      {/* Scroll progress bar */}
+      <div className="fixed top-0 left-0 right-0 h-[2px] z-50">
+        <div
+          className="h-full transition-[width] duration-150 ease-out"
+          style={{
+            width: `${scrollProgress * 100}%`,
+            background: `linear-gradient(to right, ${result.ARCHETYPE.color}, #ec4899)`,
+            boxShadow: `0 0 10px ${result.ARCHETYPE.color}66`,
+          }}
+        />
+      </div>
+
       {/* Header */}
       <header className="border-b border-white/[0.06] px-8 py-4 flex items-center justify-between sticky top-0 bg-[#050508]/90 backdrop-blur-xl z-20">
         <div className="flex items-center gap-3">
@@ -69,47 +141,74 @@ export default function AnalysisPage() {
         </div>
         <button
           onClick={() => router.push("/")}
-          className="text-sm text-white/40 hover:text-white transition-colors duration-300 flex items-center gap-2"
+          className="text-sm text-white/40 hover:text-white transition-all duration-300 flex items-center gap-2 group"
         >
-          <span>&larr;</span> New Analysis
+          <span className="group-hover:-translate-x-1 transition-transform duration-300">&larr;</span>
+          <span>New Analysis</span>
         </button>
       </header>
 
-      {/* Single column content */}
-      <main className="max-w-5xl mx-auto px-6 sm:px-10 py-16 space-y-24 stagger-children">
-        <ArchetypeHero archetype={result.ARCHETYPE} />
+      {/* Content */}
+      <main className="max-w-5xl mx-auto px-6 sm:px-10 py-16 space-y-28">
+        <RevealSection>
+          <ArchetypeHero archetype={result.ARCHETYPE} />
+        </RevealSection>
 
-        <Verdict verdict={result.VERDICT} />
+        <RevealSection delay={100}>
+          <Verdict verdict={result.VERDICT} />
+        </RevealSection>
 
-        <CognitiveFingerprint fingerprint={result.COGNITIVE_FINGERPRINT} />
+        <RevealSection delay={100}>
+          <CognitiveFingerprint fingerprint={result.COGNITIVE_FINGERPRINT} />
+        </RevealSection>
 
-        {/* Brain Activation — the hero visualization */}
-        <BrainViewer
-          activeTopic={activeTopic}
-          topics={result.TOPICS}
-          onTopicSelect={setActiveTopic}
-        />
+        <RevealSection>
+          <BrainViewer
+            activeTopic={activeTopic}
+            topics={result.TOPICS}
+            onTopicSelect={setActiveTopic}
+          />
+        </RevealSection>
 
-        <TopicsGrid
-          topics={result.TOPICS}
-          onTopicHover={setActiveTopic}
-        />
+        <RevealSection>
+          <TopicsGrid
+            topics={result.TOPICS}
+            activeTopic={activeTopic}
+            onTopicSelect={setActiveTopic}
+          />
+        </RevealSection>
 
-        <DependencyAudit items={result.DEPENDENCY_AUDIT} />
+        <RevealSection>
+          <DependencyAudit items={result.DEPENDENCY_AUDIT} />
+        </RevealSection>
 
-        <UncomfortableQuestions questions={result.UNCOMFORTABLE_QUESTIONS} />
+        <RevealSection>
+          <UncomfortableQuestions questions={result.UNCOMFORTABLE_QUESTIONS} />
+        </RevealSection>
 
-        <KnowledgeEdge edges={result.KNOWLEDGE_EDGE} />
+        <RevealSection>
+          <KnowledgeEdge edges={result.KNOWLEDGE_EDGE} />
+        </RevealSection>
 
-        {geminiData && <GeminiInsights data={geminiData as any} />}
+        {geminiData && (
+          <RevealSection>
+            <GeminiInsights data={geminiData as any} />
+          </RevealSection>
+        )}
 
-        <ShareableCard card={result.SHAREABLE_CARD} />
+        <RevealSection>
+          <ShareableCard card={result.SHAREABLE_CARD} />
+        </RevealSection>
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-white/[0.06] px-8 py-4 flex items-center justify-between max-w-5xl mx-auto">
+      <footer className="border-t border-white/[0.06] px-8 py-6 flex items-center justify-between max-w-5xl mx-auto">
         <span className="text-xs text-white/25">Built at Bitcamp 2026</span>
-        <span className="text-xs text-white/25">Claude + Gemini + Three.js + TRIBE v2</span>
+        <div className="flex items-center gap-4">
+          <span className="text-xs text-white/25">Claude + Gemini + Three.js + TRIBE v2</span>
+          <div className="w-1 h-1 rounded-full bg-white/10" />
+          <span className="text-xs text-white/15 font-data">{conversations.length} conversations analyzed</span>
+        </div>
       </footer>
     </div>
   );

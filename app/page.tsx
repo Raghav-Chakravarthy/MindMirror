@@ -1,12 +1,19 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import DropZone from "@/components/upload/DropZone";
 import { Conversation } from "@/lib/types";
 import { SAMPLE_RESULT } from "@/lib/sample-data";
 
 type Step = "upload" | "parsing" | "analyzing" | "error";
+
+const FEATURES = [
+  { label: "Cognitive Fingerprint", desc: "6-axis personality radar", icon: "◈" },
+  { label: "Brain Activation", desc: "TRIBE v2 fMRI predictions", icon: "◉" },
+  { label: "Dependency Audit", desc: "Skills you're outsourcing", icon: "⚡" },
+  { label: "Knowledge Edge", desc: "Your unique advantages", icon: "◆" },
+];
 
 export default function HomePage() {
   const router = useRouter();
@@ -15,7 +22,12 @@ export default function HomePage() {
   const [statusMsg, setStatusMsg] = useState("");
   const [streamPreview, setStreamPreview] = useState("");
   const [convCount, setConvCount] = useState(0);
+  const [mounted, setMounted] = useState(false);
   const accumulatedRef = useRef("");
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   async function handleFiles(
     files: Array<{ filename: string; content: string; platform: "claude" | "openai" | "gemini" }>
@@ -140,7 +152,7 @@ export default function HomePage() {
   }
 
   return (
-    <main className="min-h-screen flex flex-col relative overflow-hidden">
+    <main className="min-h-screen flex flex-col relative overflow-hidden noise-bg">
       {/* Ambient background orbs */}
       <div className="fixed inset-0 pointer-events-none z-0">
         <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] rounded-full bg-purple-500/[0.04] blur-[120px]" />
@@ -165,10 +177,17 @@ export default function HomePage() {
 
       <div className="flex-1 flex flex-col items-center justify-center px-8 py-16 relative z-10">
         {step === "upload" && (
-          <div className="w-full max-w-2xl space-y-12 animate-fade-in-up">
+          <div
+            className="w-full max-w-2xl space-y-12"
+            style={{
+              opacity: mounted ? 1 : 0,
+              transform: mounted ? "translateY(0)" : "translateY(20px)",
+              transition: "opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1)",
+            }}
+          >
             {/* Hero */}
             <div className="space-y-6 text-center">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-purple-500/20 bg-purple-500/5 text-xs text-purple-400 tracking-widest uppercase">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-purple-500/20 bg-purple-500/5 text-xs text-purple-400 tracking-widest uppercase animate-slide-up">
                 <div className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
                 AI Conversation Analysis
               </div>
@@ -186,8 +205,26 @@ export default function HomePage() {
               </p>
             </div>
 
+            {/* Feature pills */}
+            <div className="flex flex-wrap justify-center gap-3">
+              {FEATURES.map((f, i) => (
+                <div
+                  key={f.label}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/[0.06] bg-white/[0.02] text-xs text-white/40 hover:text-white/60 hover:border-white/[0.12] transition-all duration-300"
+                  style={{
+                    opacity: mounted ? 1 : 0,
+                    transform: mounted ? "translateY(0)" : "translateY(10px)",
+                    transition: `all 0.5s cubic-bezier(0.16, 1, 0.3, 1) ${400 + i * 80}ms`,
+                  }}
+                >
+                  <span className="text-purple-400/60">{f.icon}</span>
+                  <span>{f.label}</span>
+                </div>
+              ))}
+            </div>
+
             {/* Upload area */}
-            <div className="glass rounded-2xl p-1">
+            <div className="glass rounded-2xl p-1 gradient-border">
               <DropZone onReady={handleFiles} />
             </div>
 
@@ -205,11 +242,11 @@ export default function HomePage() {
                 sessionStorage.setItem("mindmirror_conversations", "[]");
                 router.push("/analysis");
               }}
-              className="w-full glass rounded-2xl px-6 py-6 text-base text-white/55 hover:text-white transition-all duration-500 group glow-hover"
+              className="w-full glass rounded-2xl px-6 py-6 text-base text-white/55 hover:text-white transition-all duration-500 group glow-hover press-effect"
             >
               <div className="flex items-center justify-center gap-3">
-                <div className="w-6 h-6 rounded-full border border-purple-500/30 flex items-center justify-center group-hover:border-purple-500/60 transition-colors">
-                  <div className="w-0 h-0 border-l-[6px] border-l-purple-400/60 border-y-[4px] border-y-transparent ml-0.5 group-hover:border-l-purple-400 transition-colors" />
+                <div className="w-8 h-8 rounded-full border border-purple-500/30 flex items-center justify-center group-hover:border-purple-500/60 group-hover:bg-purple-500/10 transition-all duration-300">
+                  <div className="w-0 h-0 border-l-[7px] border-l-purple-400/60 border-y-[5px] border-y-transparent ml-0.5 group-hover:border-l-purple-400 transition-colors" />
                 </div>
                 <span className="font-semibold group-hover:tracking-wider transition-all duration-300">
                   Try with sample data
@@ -227,8 +264,8 @@ export default function HomePage() {
                 { name: "ChatGPT", steps: "Data Controls → Export", color: "#10b981" },
                 { name: "Gemini", steps: "Google Takeout → Gemini", color: "#3b82f6" },
               ].map((p) => (
-                <div key={p.name} className="border border-white/[0.06] rounded-xl px-4 py-4 hover:border-white/[0.12] transition-colors">
-                  <p className="text-xs font-bold tracking-wider mb-1" style={{ color: p.color }}>
+                <div key={p.name} className="border border-white/[0.06] rounded-xl px-4 py-4 hover:border-white/[0.12] transition-all duration-300 group cursor-default">
+                  <p className="text-xs font-bold tracking-wider mb-1 group-hover:tracking-widest transition-all duration-300" style={{ color: p.color }}>
                     {p.name}
                   </p>
                   <p className="text-xs text-white/40 leading-relaxed">{p.steps}</p>
@@ -252,10 +289,33 @@ export default function HomePage() {
             <div className="space-y-3">
               <p className="text-white/80 text-base font-medium">{statusMsg}</p>
               {convCount > 0 && step === "analyzing" && (
-                <p className="text-xs text-white/35 tracking-[0.2em] uppercase">
-                  {convCount} conversations &middot; building cognitive profile
+                <p className="text-xs text-white/35 tracking-[0.2em] uppercase animate-slide-up">
+                  {convCount} conversations · building cognitive profile
                 </p>
               )}
+            </div>
+
+            {/* Progress stages */}
+            <div className="flex items-center justify-center gap-2">
+              {["Parse", "Analyze", "Profile"].map((stage, i) => {
+                const isActive = (step === "parsing" && i === 0) || (step === "analyzing" && i <= 1);
+                const isDone = (step === "analyzing" && i === 0);
+                return (
+                  <div key={stage} className="flex items-center gap-2">
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-all duration-500 ${
+                      isDone ? "bg-purple-500/30 text-purple-300" :
+                      isActive ? "bg-purple-500/20 text-purple-400 animate-pulse" :
+                      "bg-white/5 text-white/20"
+                    }`}>
+                      {isDone ? "✓" : i + 1}
+                    </div>
+                    <span className={`text-[10px] tracking-wider uppercase transition-colors duration-300 ${isActive ? "text-white/50" : "text-white/20"}`}>
+                      {stage}
+                    </span>
+                    {i < 2 && <div className={`w-8 h-px transition-colors duration-500 ${isActive ? "bg-purple-500/30" : "bg-white/5"}`} />}
+                  </div>
+                );
+              })}
             </div>
 
             <div className="text-left glass rounded-2xl p-6 h-48 flex flex-col">
@@ -272,22 +332,26 @@ export default function HomePage() {
                     <span className="inline-block w-[2px] h-4 bg-purple-400/80 ml-0.5 animate-pulse" />
                   </p>
                 </div>
-                <div className="absolute top-0 left-0 right-0 h-6 bg-gradient-to-b from-[#0e0e16] to-transparent pointer-events-none z-10" />
+                <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-[rgba(14,14,22,0.95)] to-transparent pointer-events-none z-10" />
               </div>
             </div>
           </div>
         )}
 
         {step === "error" && (
-          <div className="max-w-md space-y-6 text-center animate-fade-in">
-            <div className="glass rounded-2xl p-8 border-red-500/20">
+          <div className="max-w-md space-y-6 text-center animate-scale-in">
+            <div className="glass rounded-2xl p-8 border-red-500/20 space-y-4">
+              <div className="w-12 h-12 mx-auto rounded-full bg-red-500/10 flex items-center justify-center">
+                <span className="text-red-400 text-lg">!</span>
+              </div>
               <p className="text-base text-red-400">{error}</p>
             </div>
             <button
               onClick={() => { setStep("upload"); setError(null); }}
-              className="text-sm text-white/40 hover:text-white transition-colors"
+              className="text-sm text-white/40 hover:text-white transition-all duration-300 group flex items-center gap-2 mx-auto"
             >
-              &larr; Try again
+              <span className="group-hover:-translate-x-1 transition-transform duration-300">&larr;</span>
+              <span>Try again</span>
             </button>
           </div>
         )}
