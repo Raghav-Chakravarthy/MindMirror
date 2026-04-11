@@ -15,23 +15,61 @@ interface Props {
   onReady: (files: FilePayload[]) => void;
 }
 
+function looksLikeChatGPTItem(item: Record<string, unknown>): boolean {
+  if (item.mapping && typeof item.mapping === "object") return true;
+  if (item.conversation_id && typeof item.title === "string") return true;
+  if (typeof item.title === "string" && typeof item.create_time === "number" && item.mapping !== undefined) return true;
+  return false;
+}
+
 function detectPlatform(filename: string, content: string): Platform | null {
   const lower = filename.toLowerCase();
   if (lower.endsWith(".jsonl")) return "claude";
   if (lower.includes("gemini") && lower.endsWith(".json")) return "gemini";
   if (lower.endsWith(".json")) {
-    // Try to sniff the content
     try {
       const parsed = JSON.parse(content);
-      if (Array.isArray(parsed) && parsed[0]?.mapping) return "openai";
-      if (Array.isArray(parsed) && parsed[0]?.chat_messages) return "claude";
-      if (parsed?.entries || parsed?.conversations) return "gemini";
-      // Newline-delimited JSON (Claude JSONL as .json)
-      if (typeof parsed === "object" && parsed.chat_messages) return "claude";
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        const sample = parsed.slice(0, Math.min(5, parsed.length));
+        if (sample.some((item: Record<string, unknown>) => looksLikeChatGPTItem(item))) return "openai";
+        if (sample.some((item: Record<string, unknown>) => item?.chat_messages)) return "claude";
+        if (sample.some((item: Record<string, unknown>) => item?.entries || item?.conversations)) return "gemini";
+      }
+      if (typeof parsed === "object" && !Array.isArray(parsed)) {
+        if (looksLikeChatGPTItem(parsed)) return "openai";
+        if (parsed.chat_messages) return "claude";
+        if (parsed.entries || parsed.conversations) return "gemini";
+      }
     } catch {
-      // JSONL file saved as .json — treat as Claude
       return "claude";
     }
+  }
+  return null;
+}
+
+function isConversationFile(filename: string, content: string): Platform | null {
+  const lower = filename.toLowerCase();
+  const basename = lower.split("/").pop() ?? "";
+  if (basename.startsWith(".") || !basename.endsWith(".json")) return null;
+
+  try {
+    const parsed = JSON.parse(content);
+    if (Array.isArray(parsed)) {
+      console.log(`[isConversationFile] "${filename}" is array with ${parsed.length} items. First item keys:`, parsed.length > 0 ? Object.keys(parsed[0]) : "empty");
+      if (parsed.length > 0) {
+        const sample = parsed.slice(0, Math.min(5, parsed.length));
+        if (sample.some((item: Record<string, unknown>) => looksLikeChatGPTItem(item))) return "openai";
+        if (sample.some((item: Record<string, unknown>) => item?.chat_messages)) return "claude";
+        if (sample.some((item: Record<string, unknown>) => item?.entries || item?.conversations)) return "gemini";
+      }
+    } else if (typeof parsed === "object") {
+      console.log(`[isConversationFile] "${filename}" is object with keys:`, Object.keys(parsed));
+      if (looksLikeChatGPTItem(parsed)) return "openai";
+      if (parsed.chat_messages) return "claude";
+      if (parsed.entries || parsed.conversations) return "gemini";
+    }
+  } catch {
+    // not valid JSON
   }
   return null;
 }
@@ -40,24 +78,30 @@ async function extractFromZip(file: File): Promise<FilePayload[]> {
   const zip = await JSZip.loadAsync(file);
   const payloads: FilePayload[] = [];
 
+  const allPaths = Object.keys(zip.files).filter(p => !zip.files[p].dir);
+  console.log("[extractFromZip] files in ZIP:", allPaths);
+
   for (const [path, zipEntry] of Object.entries(zip.files)) {
     if (zipEntry.dir) continue;
     const lower = path.toLowerCase();
+    if (!lower.endsWith(".json") && !lower.endsWith(".jsonl")) continue;
 
-    // ChatGPT: conversations.json at root or in a folder
-    if (lower.endsWith("conversations.json") && !lower.includes("gemini")) {
-      const content = await zipEntry.async("string");
-      payloads.push({ filename: path, content, platform: "openai" });
+    const content = await zipEntry.async("string");
+    console.log(`[extractFromZip] checking "${path}" (${content.length} chars)`);
+
+    if (lower.endsWith(".jsonl")) {
+      payloads.push({ filename: path, content, platform: "claude" });
       continue;
     }
 
-    // Gemini takeout: Gemini/ directory with JSON files
-    if (lower.includes("gemini") && lower.endsWith(".json")) {
-      const content = await zipEntry.async("string");
-      payloads.push({ filename: path, content, platform: "gemini" });
+    const platform = isConversationFile(path, content);
+    console.log(`[extractFromZip] "${path}" → detected platform: ${platform}`);
+    if (platform) {
+      payloads.push({ filename: path, content, platform });
     }
   }
 
+  console.log(`[extractFromZip] total payloads: ${payloads.length}`, payloads.map(p => `${p.filename} (${p.platform})`));
   return payloads;
 }
 

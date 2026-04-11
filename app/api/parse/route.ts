@@ -13,6 +13,8 @@ export async function POST(req: NextRequest) {
       platform: "claude" | "openai" | "gemini";
     };
 
+    console.log(`[parse] file="${filename}" platform="${platform}" contentLength=${content.length}`);
+
     let conversations: Conversation[] = [];
 
     if (platform === "claude") {
@@ -28,6 +30,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    console.log(`[parse] result: ${conversations.length} conversations, messages: [${conversations.slice(0, 5).map(c => c.messages).join(",")}${conversations.length > 5 ? "..." : ""}]`);
+
     if (conversations.length === 0) {
       return NextResponse.json(
         { error: "No conversations found in the uploaded file." },
@@ -38,6 +42,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ conversations, count: conversations.length });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Parse failed";
+    console.error(`[parse] error:`, message);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

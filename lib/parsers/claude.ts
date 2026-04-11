@@ -3,58 +3,66 @@ import { Conversation } from "../types";
 interface ClaudeMessage {
   sender: "human" | "assistant";
   text: string;
+  content?: string;
 }
 
 interface ClaudeConversation {
   name?: string;
+  uuid?: string;
+  summary?: string;
   chat_messages?: ClaudeMessage[];
   created_at?: string;
   updated_at?: string;
 }
 
+function getMessageText(msg: ClaudeMessage): string {
+  return msg.text ?? msg.content ?? "";
+}
+
 function extractContentSample(messages: ClaudeMessage[]): string {
   const firstHuman = messages.find((m) => m.sender === "human");
-  return (firstHuman?.text ?? messages[0]?.text ?? "").slice(0, 500);
+  return (getMessageText(firstHuman ?? messages[0] ?? { sender: "human", text: "" })).slice(0, 500);
+}
+
+function convertConversation(obj: ClaudeConversation): Conversation {
+  const messages = obj.chat_messages ?? [];
+  return {
+    title: obj.name ?? "Untitled",
+    platform: "claude",
+    messages: messages.length,
+    date: obj.created_at ?? obj.updated_at ?? new Date().toISOString(),
+    content_sample: extractContentSample(messages),
+  };
 }
 
 export function parseClaudeExport(raw: string): Conversation[] {
-  const conversations: Conversation[] = [];
+  // Try JSON array first (newer Claude exports)
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed) && parsed.length > 0 && parsed[0]?.chat_messages !== undefined) {
+      return (parsed as ClaudeConversation[])
+        .map(convertConversation)
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    }
+    if (typeof parsed === "object" && !Array.isArray(parsed) && parsed.chat_messages !== undefined) {
+      return [convertConversation(parsed as ClaudeConversation)];
+    }
+  } catch {
+    // not a single JSON value — try JSONL below
+  }
 
-  // Claude exports as JSONL (one JSON object per line) or a single JSON array
+  // JSONL: one JSON object per line
+  const conversations: Conversation[] = [];
   const lines = raw.trim().split("\n").filter(Boolean);
 
   for (const line of lines) {
     try {
       const obj: ClaudeConversation = JSON.parse(line);
-      const messages = obj.chat_messages ?? [];
-      conversations.push({
-        title: obj.name ?? "Untitled",
-        platform: "claude",
-        messages: messages.length,
-        date: obj.created_at ?? obj.updated_at ?? new Date().toISOString(),
-        content_sample: extractContentSample(messages),
-      });
-    } catch {
-      // skip malformed lines
-    }
-  }
-
-  // Fallback: maybe it's a JSON array
-  if (conversations.length === 0) {
-    try {
-      const arr: ClaudeConversation[] = JSON.parse(raw);
-      for (const obj of arr) {
-        const messages = obj.chat_messages ?? [];
-        conversations.push({
-          title: obj.name ?? "Untitled",
-          platform: "claude",
-          messages: messages.length,
-          date: obj.created_at ?? obj.updated_at ?? new Date().toISOString(),
-          content_sample: extractContentSample(messages),
-        });
+      if (obj.chat_messages !== undefined) {
+        conversations.push(convertConversation(obj));
       }
     } catch {
-      // not an array either
+      // skip malformed lines
     }
   }
 

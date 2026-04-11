@@ -1,4 +1,4 @@
-// File: C:\Users\vcrag\OneDrive\Documents\MindMirror\MindMirror\app\api\brain\route.ts
+// File: /Users/tommitchell/Documents/MindMirror/app/api/brain/route.ts
 import * as entry from '../../../../../app/api/brain/route.js'
 import type { NextRequest } from 'next/server.js'
 

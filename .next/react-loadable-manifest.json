@@ -1,16 +1,14 @@
 {
-  "app\\analysis\\page.tsx -> @/components/analysis/BrainSidebar": {
-    "id": 6542,
+  "app/analysis/page.tsx -> @/components/analysis/BrainSidebar": {
+    "id": "app/analysis/page.tsx -> @/components/analysis/BrainSidebar",
     "files": [
-      "static/chunks/b536a0f1.bbb933508dcbd47b.js",
-      "static/chunks/bd904a5c.f812e8e65f9435d0.js",
-      "static/chunks/542.2c61319210181428.js"
+      "static/chunks/_app-pages-browser_components_analysis_BrainSidebar_tsx.js"
     ]
   },
-  "components\\analysis\\ShareableCard.tsx -> html2canvas": {
-    "id": 6807,
+  "components/analysis/ShareableCard.tsx -> html2canvas": {
+    "id": "components/analysis/ShareableCard.tsx -> html2canvas",
     "files": [
-      "static/chunks/ad2866b8.470e6af3964e3753.js"
+      "static/chunks/_app-pages-browser_node_modules_html2canvas_dist_html2canvas_js.js"
     ]
   }
 }
