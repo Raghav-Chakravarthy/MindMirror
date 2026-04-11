@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Project Is
 
-MindMirror is a full-stack web application that analyzes a user's AI conversation history (Claude, ChatGPT, Gemini exports) and produces a brutally honest cognitive profile using the Claude API. A 3D brain activation sidebar powered by Meta's TRIBE v2 shows which brain regions activate when the user processes their most common topics.
+MindMirror is a full-stack web application that analyzes a user's AI conversation history (Claude, ChatGPT, Gemini exports) and produces a brutally honest cognitive profile. A 3D neural network visualization sidebar powered by Three.js shows activation patterns when the user hovers over their most common topics. Gemini API provides parallel topic extraction.
 
 ## Running the App
 
@@ -12,29 +12,26 @@ MindMirror is a full-stack web application that analyzes a user's AI conversatio
 # Install dependencies (first time)
 npm install
 
-# Option A — run everything at once
-bash start.sh
-
-# Option B — run services separately
-npm run dev                      # Next.js on :3000
-cd brain-service && python main.py  # TRIBE v2 sidecar on :8000
+# Run the dev server
+npm run dev
 ```
 
-Add your Claude API key to `.env.local`:
+Add your API keys to `.env.local`:
 ```
 ANTHROPIC_API_KEY=sk-ant-...
-TRIBE_SERVICE_URL=http://localhost:8000
+GEMINI_API_KEY=...          # Optional — enables Gemini topic extraction section
 ```
 
 ## Architecture
 
 ```
 User uploads file(s)
-  → DropZone detects platform
-  → POST /api/parse → lib/parsers/{claude,chatgpt,gemini}.ts → Conversation[]
-  → POST /api/analyze → Claude API (claude-sonnet-4-6) with system prompt → MindMirrorResult JSON
-  → sessionStorage → /analysis page renders 8 sections
-  → Topic hover → POST /api/brain → Python sidecar → TRIBE v2 → vertex activation → BrainSidebar recolors mesh
+ → DropZone detects platform
+ → POST /api/parse → lib/parsers/{claude,chatgpt,gemini}.ts → Conversation[]
+ → POST /api/analyze → Claude API (streaming, claude-sonnet-4-6) → MindMirrorResult JSON
+ → POST /api/gemini-extract → Gemini 2.0 Flash (parallel) → topic extraction
+ → sessionStorage → /analysis page renders 9 sections
+ → Topic hover → Three.js neural network visualization activates
 ```
 
 ## Key Files
@@ -43,31 +40,21 @@ User uploads file(s)
 |---|---|
 | `lib/types.ts` | All shared TypeScript types (Conversation, MindMirrorResult, etc.) |
 | `lib/system-prompt.ts` | MindMirror system prompt + `buildUserMessage()` |
+| `lib/sample-data.ts` | Pre-built demo data for judges |
 | `lib/parsers/claude.ts` | Parses Claude JSONL export |
-| `lib/parsers/chatgpt.ts` | Parses ChatGPT ZIP → conversations.json (tree traversal) |
+| `lib/parsers/chatgpt.ts` | Parses ChatGPT ZIP → conversations.json |
 | `lib/parsers/gemini.ts` | Parses Gemini Takeout ZIP JSON files |
-| `app/api/analyze/route.ts` | Server-side Claude API call; reads `ANTHROPIC_API_KEY` |
-| `app/api/brain/route.ts` | Proxies to TRIBE v2 sidecar; returns `{ activation: null }` if sidecar down |
-| `components/analysis/BrainSidebar.tsx` | Three.js brain mesh, vertex-colors updated from TRIBE v2 output |
-| `brain-service/main.py` | FastAPI sidecar for TRIBE v2 inference |
-| `brain-service/model.py` | TRIBE v2 load + inference wrapper; gracefully handles missing package |
+| `app/api/analyze/route.ts` | Streaming Claude API call |
+| `app/api/gemini-extract/route.ts` | Gemini 2.0 Flash topic extraction |
+| `app/api/brain/route.ts` | Legacy TRIBE v2 proxy (unused) |
+| `components/analysis/BrainSidebar.tsx` | Three.js neural network particle visualization |
+| `components/analysis/GeminiInsights.tsx` | Gemini-extracted topic display |
 
 ## MindMirrorResult Schema (8 fields)
 
 `COGNITIVE_FINGERPRINT` · `TOPICS` · `DEPENDENCY_AUDIT` · `UNCOMFORTABLE_QUESTIONS` · `KNOWLEDGE_EDGE` · `ARCHETYPE` · `VERDICT` · `SHAREABLE_CARD`
 
 Full type definitions in `lib/types.ts`.
-
-## TRIBE v2 Sidecar Setup
-
-TRIBE v2 requires the package from Meta's GitHub:
-```bash
-git clone https://github.com/facebookresearch/tribev2
-pip install -e ./tribev2
-cd brain-service && pip install -r requirements.txt
-```
-
-The sidecar returns `{ "activation": null }` gracefully if the model isn't installed — the brain viewer shows "Brain map unavailable" instead of crashing.
 
 ## Export Format Notes
 

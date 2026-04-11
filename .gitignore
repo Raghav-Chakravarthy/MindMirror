@@ -1,2 +1,7 @@
 node_modules
+.next
 .env.local
+tribev2/
+brain-service/venv/
+brain-service/cache/
+__pycache__

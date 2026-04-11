@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
   RadarChart,
   PolarGrid,
@@ -11,9 +12,18 @@ import {
 import { CognitiveFingerprint as CFType } from "@/lib/types";
 
 const LABELS: Record<keyof CFType, string> = {
+  systems_thinking: "Systems Thinking",
+  pattern_seeking: "Pattern Seeking",
+  first_principles: "First Principles",
+  execution_speed: "Execution Speed",
+  depth_vs_breadth: "Depth vs Breadth",
+  uncertainty_tolerance: "Uncertainty Tolerance",
+};
+
+const SHORT_LABELS: Record<keyof CFType, string> = {
   systems_thinking: "Systems",
   pattern_seeking: "Patterns",
-  first_principles: "First Principles",
+  first_principles: "Principles",
   execution_speed: "Execution",
   depth_vs_breadth: "Depth",
   uncertainty_tolerance: "Uncertainty",
@@ -24,35 +34,43 @@ interface Props {
 }
 
 export default function CognitiveFingerprint({ fingerprint }: Props) {
+  const [animated, setAnimated] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setAnimated(true), 200);
+    return () => clearTimeout(timer);
+  }, []);
+
   const data = (Object.entries(fingerprint) as [keyof CFType, number][]).map(
-    ([key, value]) => ({ dimension: LABELS[key], value, fullMark: 100 })
+    ([key, value]) => ({ dimension: SHORT_LABELS[key], value, fullMark: 100 })
   );
 
   return (
     <section className="space-y-6">
-      <div className="border-b border-[#222] pb-3">
+      <div className="border-b border-[#222] pb-3 flex items-baseline gap-3">
         <h2 className="text-xs tracking-[0.3em] uppercase text-[#555]">
           Cognitive Fingerprint
         </h2>
+        <div className="h-px flex-1 bg-gradient-to-r from-[#222] to-transparent" />
       </div>
 
       <div className="grid grid-cols-2 gap-8">
-        {/* Radar */}
-        <div className="h-64">
+        <div className="h-72">
           <ResponsiveContainer width="100%" height="100%">
-            <RadarChart data={data} margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
-              <PolarGrid stroke="#222" />
+            <RadarChart data={data} margin={{ top: 20, right: 30, bottom: 20, left: 30 }}>
+              <PolarGrid stroke="#1a1a1a" strokeDasharray="3 3" />
               <PolarAngleAxis
                 dataKey="dimension"
-                tick={{ fill: "#666", fontSize: 10, fontFamily: "Courier New" }}
+                tick={{ fill: "#555", fontSize: 10, fontFamily: "Courier New" }}
               />
               <Radar
                 name="You"
                 dataKey="value"
                 stroke="#ffffff"
                 fill="#ffffff"
-                fillOpacity={0.08}
+                fillOpacity={0.06}
                 strokeWidth={1.5}
+                dot={{ r: 3, fill: "#fff", strokeWidth: 0 }}
               />
               <Tooltip
                 contentStyle={{
@@ -68,19 +86,25 @@ export default function CognitiveFingerprint({ fingerprint }: Props) {
           </ResponsiveContainer>
         </div>
 
-        {/* Score bars */}
-        <div className="space-y-3 py-2">
+        <div className="space-y-4 py-2">
           {(Object.entries(fingerprint) as [keyof CFType, number][]).map(
             ([key, value]) => (
-              <div key={key} className="space-y-1">
+              <div key={key} className="space-y-1.5">
                 <div className="flex justify-between text-xs">
-                  <span className="text-[#888]">{LABELS[key]}</span>
-                  <span className="text-[#555]">{value}</span>
+                  <span className="text-[#777]">{LABELS[key]}</span>
+                  <span className="text-[#555] tabular-nums">{value}</span>
                 </div>
-                <div className="h-px bg-[#1a1a1a] relative">
+                <div className="h-1 bg-[#111] relative overflow-hidden rounded-full">
                   <div
-                    className="h-px bg-white absolute top-0 left-0 transition-all"
-                    style={{ width: `${value}%` }}
+                    className="h-full rounded-full transition-all duration-1000 ease-out"
+                    style={{
+                      width: animated ? `${value}%` : "0%",
+                      background: value > 70
+                        ? "linear-gradient(to right, #10b981, #34d399)"
+                        : value > 40
+                        ? "linear-gradient(to right, #555, #888)"
+                        : "linear-gradient(to right, #ef4444, #f87171)",
+                    }}
                   />
                 </div>
               </div>

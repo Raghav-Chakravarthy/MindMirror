@@ -12,6 +12,7 @@ import UncomfortableQuestions from "@/components/analysis/UncomfortableQuestions
 import KnowledgeEdge from "@/components/analysis/KnowledgeEdge";
 import Verdict from "@/components/analysis/Verdict";
 import ShareableCard from "@/components/analysis/ShareableCard";
+import GeminiInsights from "@/components/analysis/GeminiInsights";
 
 // Three.js brain viewer — browser only, no SSR
 const BrainSidebar = dynamic(() => import("@/components/analysis/BrainSidebar"), {
@@ -28,16 +29,19 @@ export default function AnalysisPage() {
   const [result, setResult] = useState<MindMirrorResult | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeTopic, setActiveTopic] = useState<Topic | null>(null);
+  const [geminiData, setGeminiData] = useState<Record<string, unknown> | null>(null);
 
   useEffect(() => {
     const raw = sessionStorage.getItem("mindmirror_result");
     const rawConvs = sessionStorage.getItem("mindmirror_conversations");
+    const rawGemini = sessionStorage.getItem("mindmirror_gemini");
     if (!raw) {
       router.replace("/");
       return;
     }
     setResult(JSON.parse(raw));
     if (rawConvs) setConversations(JSON.parse(rawConvs));
+    if (rawGemini) setGeminiData(JSON.parse(rawGemini));
   }, [router]);
 
   if (!result) {
@@ -67,7 +71,7 @@ export default function AnalysisPage() {
       <div className="flex flex-1 overflow-hidden">
         {/* Main content */}
         <main className="flex-1 overflow-y-auto">
-          <div className="max-w-4xl mx-auto px-8 py-12 space-y-16">
+          <div className="max-w-4xl mx-auto px-8 py-12 space-y-16 stagger-children">
             <ArchetypeHero archetype={result.ARCHETYPE} />
             <Verdict verdict={result.VERDICT} />
             <CognitiveFingerprint fingerprint={result.COGNITIVE_FINGERPRINT} />
@@ -78,6 +82,7 @@ export default function AnalysisPage() {
             <DependencyAudit items={result.DEPENDENCY_AUDIT} />
             <UncomfortableQuestions questions={result.UNCOMFORTABLE_QUESTIONS} />
             <KnowledgeEdge edges={result.KNOWLEDGE_EDGE} />
+            {geminiData && <GeminiInsights data={geminiData as any} />}
             <ShareableCard card={result.SHAREABLE_CARD} />
           </div>
         </main>
@@ -99,8 +104,7 @@ export default function AnalysisPage() {
           </div>
           <div className="px-4 py-3 border-t border-[#222]">
             <p className="text-[10px] text-[#444] leading-relaxed">
-              Predicted neural activation via Meta TRIBE v2. Hover a topic to
-              see which brain regions activate.
+              Neural activation via Meta TRIBE v2 when available. Hover a topic to see which brain regions activate.
             </p>
           </div>
         </aside>

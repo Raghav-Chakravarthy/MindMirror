@@ -7,30 +7,41 @@ on the fsaverage5 cortical surface (20,484 vertices) from text, audio, or video.
 Setup:
   1. Clone https://github.com/facebookresearch/tribev2
   2. pip install -e ./tribev2
-  3. The model downloads weights from HuggingFace on first load (~several GB).
+  3. The model downloads weights from HuggingFace on first load (~1 GB).
 
-This wrapper accepts a text string, runs inference, averages over time, and
-returns a list of 20,484 normalized activation values (0–1).
+This wrapper accepts a text string, creates a minimal events DataFrame,
+runs inference, averages over time, and returns a list of 20,484
+normalized activation values (0-1).
 """
 
 from __future__ import annotations
 import os
+import tempfile
 import numpy as np
+import pandas as pd
+from pathlib import Path
 
 _model = None
 _model_error: str | None = None
+
+CACHE_FOLDER = Path(os.environ.get("TRIBE_CACHE", "./cache"))
 
 
 def _load_model():
     global _model, _model_error
     try:
-        from tribe import TribeModel  # installed from facebookresearch/tribev2
-        _model = TribeModel.from_pretrained("facebook/tribev2")
-        _model.eval()
+        from tribev2.demo_utils import TribeModel
+
+        CACHE_FOLDER.mkdir(parents=True, exist_ok=True)
+        _model = TribeModel.from_pretrained(
+            "facebook/tribev2",
+            cache_folder=str(CACHE_FOLDER),
+            device="auto",
+        )
         print("[TRIBE v2] Model loaded successfully.")
-    except ImportError:
+    except ImportError as e:
         _model_error = (
-            "TRIBE v2 package not found. "
+            f"TRIBE v2 package not found ({e}). "
             "Clone https://github.com/facebookresearch/tribev2 and run: "
             "pip install -e ./tribev2"
         )
@@ -48,11 +59,36 @@ def get_model():
     return _model
 
 
+def _build_text_events(text: str) -> pd.DataFrame:
+    """Build a minimal events DataFrame for text input.
+
+    Creates word-level events with context fields that TRIBE v2's
+    text feature extractor (LLaMA 3.2) expects.
+    """
+    words = text.split()
+    rows = []
+    t = 0.0
+    for i, word in enumerate(words):
+        rows.append({
+            "type": "Word",
+            "text": word,
+            "start": t,
+            "duration": 0.3,
+            "timeline": "default",
+            "subject": "default",
+            "sentence": text,
+            "context": text,
+            "sequence_id": 0,
+        })
+        t += 0.35
+    return pd.DataFrame(rows)
+
+
 def predict_text(text: str) -> list[float] | None:
     """
     Predict brain activation for a text stimulus.
 
-    Returns a list of 20,484 floats (normalized 0–1) representing
+    Returns a list of 20,484 floats (normalized 0-1) representing
     activation on the fsaverage5 cortical surface, or None if unavailable.
     """
     import torch
@@ -62,19 +98,18 @@ def predict_text(text: str) -> list[float] | None:
         return None
 
     try:
-        with torch.no_grad():
-            # TRIBE v2 accepts text via its built-in TTS (LLaMA 3.2)
-            # Output shape: (T, 20484) where T = seconds of stimulus
-            output = model.predict(text=text)
+        events = _build_text_events(text)
 
-        if isinstance(output, torch.Tensor):
-            arr = output.cpu().numpy()
+        from neuralset.events.utils import standardize_events
+        events = standardize_events(events)
+
+        preds, segments = model.predict(events, verbose=False)
+
+        # preds shape: (n_segments, n_vertices)
+        if preds.ndim == 2:
+            arr = preds.mean(axis=0)
         else:
-            arr = np.array(output)
-
-        # Average over time dimension if present
-        if arr.ndim == 2:
-            arr = arr.mean(axis=0)  # (20484,)
+            arr = preds.flatten()
 
         # Normalize to [0, 1]
         min_v, max_v = arr.min(), arr.max()
@@ -87,4 +122,6 @@ def predict_text(text: str) -> list[float] | None:
 
     except Exception as e:
         print(f"[TRIBE v2] Inference error: {e}")
+        import traceback
+        traceback.print_exc()
         return None

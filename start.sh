@@ -8,6 +8,9 @@ echo "Starting MindMirror..."
 # Start Python TRIBE v2 sidecar in background
 echo "  → Starting TRIBE v2 sidecar on :8000"
 cd brain-service
+if [ -d "venv" ]; then
+  source venv/bin/activate
+fi
 python main.py &
 BRAIN_PID=$!
 cd ..

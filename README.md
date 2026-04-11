@@ -1,105 +1,101 @@
 # MindMirror
 
-system-prompt.txt
+**A brutally honest cognitive analysis of your AI conversation history.**
 
-ROLE:
-You are MindMirror — a brutally honest cognitive analyst that reads AI conversation history and produces an uncomfortable but accurate portrait of how someone thinks, what they avoid, and what they've outsourced to AI. You are not a chatbot. You are a mirror.
+Upload your conversation exports from Claude, ChatGPT, or Gemini and get an uncomfortably accurate portrait of how you think, what you avoid, and what you're outsourcing to AI.
 
-INPUT FORMAT:
-You will receive a JSON array of conversation objects with fields:
-  - title: string
-  - platform: "claude" | "openai" | "gemini"
-  - messages: number
-  - date: ISO string
-  - content_sample: string (first 500 chars of conversation text)
+## What It Does
 
-YOUR JOB — produce a JSON response with ALL of the following fields:
+MindMirror analyzes your AI conversation history and produces:
 
-1. COGNITIVE_FINGERPRINT (object)
-   Extract 6 cognitive dimensions scored 0-100:
-   - systems_thinking: Do they connect ideas across domains?
-   - pattern_seeking: Do they look for rules and frameworks?
-   - first_principles: Do they question fundamentals or accept defaults?
-   - execution_speed: Do they want answers fast or explore deeply?
-   - depth_vs_breadth: Score toward 0 = depth obsessive, 100 = broad generalist
-   - uncertainty_tolerance: High = comfortable with ambiguity, Low = seeks definitive answers
-   Base scores on HOW they phrase questions, not just what they ask about.
+- **Cognitive Fingerprint** — 6-axis radar chart of how you think (systems thinking, pattern seeking, first principles, execution speed, depth vs breadth, uncertainty tolerance)
+- **Topic Analysis** — Every topic you've discussed, how often, how deep, and a brutally honest verdict on each
+- **Dependency Audit** — Skills you're outsourcing to AI instead of owning, rated by severity (habit → dependency → atrophy)
+- **Uncomfortable Questions** — Questions your history raises that you probably haven't asked yourself
+- **Knowledge Edge** — Unusual areas where your curiosity gives you a competitive advantage
+- **Archetype** — Your cognitive archetype (e.g. "THE ANXIOUS BUILDER")
+- **Shareable Card** — A downloadable PNG card with your most confrontational truth
 
-2. TOPICS (array of objects, max 15)
-   Each topic:
-   - name: string (2-4 words)
-   - count: number of conversations
-   - domain: "ai" | "frontend" | "backend" | "devops" | "design" | "product" | "other"
-   - is_returning: boolean (did they keep coming back?)
-   - depth_score: 0-100 (surface curiosity vs deep engagement)
-   - verdict: one brutal sentence about what this topic says about them
+## Architecture
 
-3. DEPENDENCY_AUDIT (array)
-   Topics they appear to be outsourcing rather than owning:
-   - topic: string
-   - evidence: string (why you think this)
-   - severity: "habit" | "dependency" | "atrophy"
-   - reclaim_prompt: a question they should ask themselves
+```
+Upload file(s)
+  → DropZone detects platform (Claude/ChatGPT/Gemini)
+  → POST /api/parse → lib/parsers/{claude,chatgpt,gemini}.ts → Conversation[]
+  → POST /api/analyze → Claude API (streaming) → MindMirrorResult JSON
+  → sessionStorage → /analysis page renders 8 sections
+  → Topic hover → Neural network visualization lights up
+  → Download shareable card as PNG
+```
 
-4. UNCOMFORTABLE_QUESTIONS (array of 5-7 strings)
-   Questions their conversation history raises that they probably haven't asked themselves.
-   Format: direct, second-person, slightly confrontational but not mean.
-   Examples of the RIGHT tone:
-   - "You've asked about X 23 times. What would it take for you to stop asking?"
-   - "You've never asked about Y. Is that a choice or a blind spot?"
-   - "Your questions get vaguer on Friday afternoons. What are you avoiding?"
+## Tech Stack
 
-5. KNOWLEDGE_EDGE (array of 3-5 strings)
-   Topics where their curiosity is unusual — things most people in their apparent domain aren't asking about. Frame as competitive advantage.
+- **Next.js 14** (App Router)
+- **TypeScript** (strict mode)
+- **Tailwind CSS** (custom dark theme)
+- **Three.js** (neural network particle visualization)
+- **Recharts** (radar chart)
+- **Claude API** (streaming analysis via claude-sonnet-4-6)
+- **html2canvas** (shareable card export)
 
-6. ARCHETYPE (object)
-   - name: string (2-4 words in CAPS, e.g. "THE ANXIOUS BUILDER")
-   - tagline: string (one sentence, second-person, what this means about them)
-   - color: hex string for the archetype (pick something thematic)
+## Getting Started
 
-7. VERDICT (string, 100-150 words)
-   The full mirror. What does this history actually say about them?
-   Use specific topic names and counts from their data.
-   Be direct. Name the pattern. Name the risk. Name the edge.
-   End with one specific action they should take this week.
+```bash
+# Install dependencies
+npm install
 
-8. SHAREABLE_CARD (object)
-   - headline: string (max 12 words, the most confrontational truth)
-   - stat: string (most striking number, e.g. "47 conversations about X")
-   - pull_quote: string (one sentence from the verdict, max 20 words)
-   - archetype: same as above
+# Add your API key
+echo "ANTHROPIC_API_KEY=sk-ant-..." > .env.local
 
-TONE RULES:
-- Never be mean or cruel. Be honest and direct.
-- Use "you" not "the user" — speak TO them.
-- Specific beats vague. "You asked about RAG 38 times" beats "you ask about AI a lot."
-- Every insight must be grounded in something observable in the data.
-- The uncomfortable questions should feel like a therapist who also knows software.
-- Do NOT produce generic insights that could apply to anyone.
-- If the data is thin (<10 conversations), say so and caveat your analysis.
+# Run the dev server
+npm run dev
+```
 
-OUTPUT FORMAT:
-Respond ONLY with valid JSON. No preamble, no markdown fences, no explanation.
-The JSON must be parseable by JSON.parse() immediately.
+Open [http://localhost:3000](http://localhost:3000).
 
+## Supported Export Formats
 
+| Platform | How to Export | Format |
+|----------|-------------|--------|
+| **Claude** | Settings → Export Data | `.json` or `.jsonl` |
+| **ChatGPT** | Settings → Data Controls → Export | `.zip` containing `conversations.json` |
+| **Gemini** | Google Takeout → Gemini | `.zip` with JSON files |
 
+## Project Structure
 
+```
+app/
+  page.tsx                    # Upload page with streaming progress
+  analysis/page.tsx           # Results page with 8 analysis sections
+  api/
+    parse/route.ts            # File parsing endpoint
+    analyze/route.ts          # Claude API streaming endpoint
+components/
+  upload/DropZone.tsx          # Drag-and-drop file upload with platform detection
+  analysis/
+    ArchetypeHero.tsx          # Archetype display with glow effects
+    Verdict.tsx                # Full analysis verdict
+    CognitiveFingerprint.tsx   # Radar chart + animated score bars
+    TopicsGrid.tsx             # Topic cards with domain colors
+    DependencyAudit.tsx        # Severity-coded dependency items
+    UncomfortableQuestions.tsx  # Numbered question list
+    KnowledgeEdge.tsx          # Competitive advantage items
+    ShareableCard.tsx          # Downloadable PNG card
+    BrainSidebar.tsx           # Three.js neural network visualization
+lib/
+  types.ts                     # All TypeScript types
+  system-prompt.ts             # Claude system prompt + message builder
+  sample-data.ts               # Demo data for judges
+  parsers/
+    claude.ts                  # Claude JSONL/JSON parser
+    chatgpt.ts                 # ChatGPT conversations.json parser
+    gemini.ts                  # Gemini Takeout JSON parser
+```
 
+## Hackathon
 
-user-message.js
+Built at **Bitcamp 2026** in 36 hours.
 
-function buildUserMessage(parsedConversations) {
-  return `Analyze this conversation history and return your full MindMirror JSON.
+## License
 
-CONVERSATION DATA:
-${JSON.stringify(parsedConversations.slice(0, 40), null, 2)}
-
-METADATA:
-- Total conversations: ${parsedConversations.length}
-- Platforms: ${[...new Set(parsedConversations.map(c => c.platform))].join(', ')}
-- Date range: ${parsedConversations[0]?.date} to ${parsedConversations.at(-1)?.date}
-- Total messages: ${parsedConversations.reduce((a, c) => a + c.messages, 0)}
-
-Return ONLY valid JSON matching the schema in your instructions.`
-}
+MIT

@@ -2,91 +2,61 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import * as THREE from "three";
-import { Topic } from "@/lib/types";
+import { Topic, TopicDomain } from "@/lib/types";
 
 interface Props {
   activeTopic: Topic | null;
 }
 
-// Map a 0-1 activation value to an RGB color (blue → cyan → green → yellow → red)
-function activationToColor(v: number): THREE.Color {
-  const c = new THREE.Color();
-  // Use HSL: 240° (blue) to 0° (red) as v goes 0→1
-  c.setHSL((1 - v) * 0.67, 1, 0.5);
-  return c;
+const DOMAIN_COLORS: Record<TopicDomain, string> = {
+  ai: "#7c3aed",
+  frontend: "#0ea5e9",
+  backend: "#10b981",
+  devops: "#f59e0b",
+  design: "#ec4899",
+  product: "#6366f1",
+  other: "#6b7280",
+};
+
+const NODE_COUNT = 120;
+const EDGE_COUNT = 180;
+const nodeActivations = new Float32Array(NODE_COUNT);
+
+function seededRandom(seed: number) {
+  let s = seed;
+  return () => {
+    s = (s * 16807 + 0) % 2147483647;
+    return (s - 1) / 2147483646;
+  };
 }
 
-// Build a simple stylized brain mesh using two merged tori (left + right hemisphere silhouettes)
-// This is a placeholder geometry until real fsaverage5 meshes are loaded
-function buildPlaceholderBrain(): THREE.BufferGeometry {
-  const group = new THREE.BufferGeometry();
-  const geometries: THREE.BufferGeometry[] = [];
+function buildBrainNetwork() {
+  const rand = seededRandom(42);
+  const nodes: THREE.Vector3[] = [];
 
-  // Left hemisphere
-  const left = new THREE.SphereGeometry(1, 32, 24);
-  left.applyMatrix4(new THREE.Matrix4().makeTranslation(-0.55, 0, 0));
-  left.applyMatrix4(new THREE.Matrix4().makeScale(1, 0.82, 0.88));
-  geometries.push(left);
+  for (let i = 0; i < NODE_COUNT; i++) {
+    const theta = rand() * Math.PI * 2;
+    const phi = Math.acos(2 * rand() - 1);
+    const r = 1.2 + rand() * 0.6;
 
-  // Right hemisphere
-  const right = new THREE.SphereGeometry(1, 32, 24);
-  right.applyMatrix4(new THREE.Matrix4().makeTranslation(0.55, 0, 0));
-  right.applyMatrix4(new THREE.Matrix4().makeScale(1, 0.82, 0.88));
-  geometries.push(right);
+    const x = r * Math.sin(phi) * Math.cos(theta) * (1 + 0.3 * Math.sin(phi * 3));
+    const y = r * Math.sin(phi) * Math.sin(theta) * 0.85;
+    const z = r * Math.cos(phi) * 0.9;
 
-  // Merge using BufferGeometryUtils approach manually
-  const merged = mergeGeometries(geometries);
-  return merged;
-}
-
-function mergeGeometries(geos: THREE.BufferGeometry[]): THREE.BufferGeometry {
-  let totalVertices = 0;
-  let totalIndices = 0;
-
-  for (const g of geos) {
-    totalVertices += (g.getAttribute("position") as THREE.BufferAttribute).count;
-    if (g.index) totalIndices += g.index.count;
+    nodes.push(new THREE.Vector3(x, y, z));
   }
 
-  const positions = new Float32Array(totalVertices * 3);
-  const normals = new Float32Array(totalVertices * 3);
-  const colors = new Float32Array(totalVertices * 3);
-  const indices: number[] = [];
-
-  let vOffset = 0;
-  let iOffset = 0;
-
-  for (const g of geos) {
-    const pos = g.getAttribute("position") as THREE.BufferAttribute;
-    const nor = g.getAttribute("normal") as THREE.BufferAttribute;
-    const count = pos.count;
-
-    positions.set(pos.array, vOffset * 3);
-    normals.set(nor.array, vOffset * 3);
-
-    // Default gray color
-    for (let i = 0; i < count; i++) {
-      colors[(vOffset + i) * 3] = 0.2;
-      colors[(vOffset + i) * 3 + 1] = 0.2;
-      colors[(vOffset + i) * 3 + 2] = 0.2;
+  const edges: [number, number][] = [];
+  for (let i = 0; i < EDGE_COUNT; i++) {
+    const a = Math.floor(rand() * NODE_COUNT);
+    let b = Math.floor(rand() * NODE_COUNT);
+    if (b === a) b = (a + 1) % NODE_COUNT;
+    if (nodes[a].distanceTo(nodes[b]) < 1.8) {
+      edges.push([a, b]);
     }
-
-    if (g.index) {
-      const idx = g.index.array;
-      for (let i = 0; i < idx.length; i++) {
-        indices.push((idx[i] as number) + vOffset);
-      }
-    }
-
-    vOffset += count;
   }
 
-  const merged = new THREE.BufferGeometry();
-  merged.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-  merged.setAttribute("normal", new THREE.BufferAttribute(normals, 3));
-  merged.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-  merged.setIndex(indices);
-  return merged;
+  return { nodes, edges };
 }
 
 export default function BrainSidebar({ activeTopic }: Props) {
@@ -95,61 +65,262 @@ export default function BrainSidebar({ activeTopic }: Props) {
     renderer: THREE.WebGLRenderer;
     scene: THREE.Scene;
     camera: THREE.PerspectiveCamera;
-    brain: THREE.Mesh;
-    animFrame: number;
+    nodesMesh: THREE.Points;
+    edgesMesh: THREE.LineSegments;
+    glowMesh: THREE.Points;
+    nodes: THREE.Vector3[];
+    edges: [number, number][];
+    frame: number;
+    clock: THREE.Clock;
+    targetColor: THREE.Color;
+    currentColor: THREE.Color;
+    activation: number;
+    targetActivation: number;
   } | null>(null);
-  const [status, setStatus] = useState<"idle" | "loading" | "unavailable">("idle");
+  const [status, setStatus] = useState<"idle" | "active">("idle");
+  const [tribeAvailable, setTribeAvailable] = useState(false);
 
-  // Initialize Three.js scene
   useEffect(() => {
     const container = canvasRef.current;
     if (!container) return;
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(container.clientWidth, container.clientHeight);
     renderer.setClearColor(0x000000, 0);
     container.appendChild(renderer.domElement);
 
     const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x000000, 0.15);
+
     const camera = new THREE.PerspectiveCamera(
-      45,
+      50,
       container.clientWidth / container.clientHeight,
       0.1,
       100
     );
-    camera.position.set(0, 0, 5);
+    camera.position.set(0, 0, 4.5);
 
-    // Lighting
-    const ambient = new THREE.AmbientLight(0xffffff, 0.4);
-    scene.add(ambient);
-    const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    dirLight.position.set(2, 3, 4);
-    scene.add(dirLight);
-    const rimLight = new THREE.DirectionalLight(0x4488ff, 0.3);
-    rimLight.position.set(-3, -1, -2);
-    scene.add(rimLight);
+    const { nodes, edges } = buildBrainNetwork();
 
-    // Brain mesh
-    const geo = buildPlaceholderBrain();
-    const mat = new THREE.MeshPhongMaterial({
-      vertexColors: true,
-      shininess: 30,
-      side: THREE.FrontSide,
+    // Nodes as points
+    const nodePositions = new Float32Array(NODE_COUNT * 3);
+    const nodeSizes = new Float32Array(NODE_COUNT);
+    const nodeColors = new Float32Array(NODE_COUNT * 3);
+    nodeActivations.fill(0);
+
+    for (let i = 0; i < NODE_COUNT; i++) {
+      nodePositions[i * 3] = nodes[i].x;
+      nodePositions[i * 3 + 1] = nodes[i].y;
+      nodePositions[i * 3 + 2] = nodes[i].z;
+      nodeSizes[i] = 3 + Math.random() * 4;
+      nodeColors[i * 3] = 0.15;
+      nodeColors[i * 3 + 1] = 0.15;
+      nodeColors[i * 3 + 2] = 0.2;
+      nodeActivations[i] = 0;
+    }
+
+    const nodeGeo = new THREE.BufferGeometry();
+    nodeGeo.setAttribute("position", new THREE.BufferAttribute(nodePositions, 3));
+    nodeGeo.setAttribute("size", new THREE.BufferAttribute(nodeSizes, 1));
+    nodeGeo.setAttribute("color", new THREE.BufferAttribute(nodeColors, 3));
+
+    const nodeMat = new THREE.ShaderMaterial({
+      uniforms: {
+        uTime: { value: 0 },
+        uPixelRatio: { value: renderer.getPixelRatio() },
+      },
+      vertexShader: `
+        attribute float size;
+        attribute vec3 color;
+        varying vec3 vColor;
+        uniform float uTime;
+        uniform float uPixelRatio;
+        void main() {
+          vColor = color;
+          vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+          gl_PointSize = size * uPixelRatio * (3.0 / -mvPosition.z);
+          gl_Position = projectionMatrix * mvPosition;
+        }
+      `,
+      fragmentShader: `
+        varying vec3 vColor;
+        void main() {
+          float d = length(gl_PointCoord - vec2(0.5));
+          if (d > 0.5) discard;
+          float alpha = smoothstep(0.5, 0.1, d);
+          gl_FragColor = vec4(vColor, alpha);
+        }
+      `,
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
     });
-    const brain = new THREE.Mesh(geo, mat);
-    scene.add(brain);
 
-    // Slow rotation
+    const nodesMesh = new THREE.Points(nodeGeo, nodeMat);
+    scene.add(nodesMesh);
+
+    // Glow particles (larger, dimmer)
+    const glowPositions = new Float32Array(NODE_COUNT * 3);
+    const glowSizes = new Float32Array(NODE_COUNT);
+    const glowColors = new Float32Array(NODE_COUNT * 3);
+
+    for (let i = 0; i < NODE_COUNT; i++) {
+      glowPositions[i * 3] = nodes[i].x;
+      glowPositions[i * 3 + 1] = nodes[i].y;
+      glowPositions[i * 3 + 2] = nodes[i].z;
+      glowSizes[i] = 12 + Math.random() * 8;
+      glowColors[i * 3] = 0.05;
+      glowColors[i * 3 + 1] = 0.05;
+      glowColors[i * 3 + 2] = 0.08;
+    }
+
+    const glowGeo = new THREE.BufferGeometry();
+    glowGeo.setAttribute("position", new THREE.BufferAttribute(glowPositions, 3));
+    glowGeo.setAttribute("size", new THREE.BufferAttribute(glowSizes, 1));
+    glowGeo.setAttribute("color", new THREE.BufferAttribute(glowColors, 3));
+
+    const glowMat = new THREE.ShaderMaterial({
+      uniforms: {
+        uPixelRatio: { value: renderer.getPixelRatio() },
+      },
+      vertexShader: `
+        attribute float size;
+        attribute vec3 color;
+        varying vec3 vColor;
+        uniform float uPixelRatio;
+        void main() {
+          vColor = color;
+          vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+          gl_PointSize = size * uPixelRatio * (3.0 / -mvPosition.z);
+          gl_Position = projectionMatrix * mvPosition;
+        }
+      `,
+      fragmentShader: `
+        varying vec3 vColor;
+        void main() {
+          float d = length(gl_PointCoord - vec2(0.5));
+          if (d > 0.5) discard;
+          float alpha = smoothstep(0.5, 0.0, d) * 0.4;
+          gl_FragColor = vec4(vColor, alpha);
+        }
+      `,
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    });
+
+    const glowMesh = new THREE.Points(glowGeo, glowMat);
+    scene.add(glowMesh);
+
+    // Edges
+    const edgePositions = new Float32Array(edges.length * 6);
+    const edgeColors = new Float32Array(edges.length * 6);
+
+    for (let i = 0; i < edges.length; i++) {
+      const [a, b] = edges[i];
+      edgePositions[i * 6] = nodes[a].x;
+      edgePositions[i * 6 + 1] = nodes[a].y;
+      edgePositions[i * 6 + 2] = nodes[a].z;
+      edgePositions[i * 6 + 3] = nodes[b].x;
+      edgePositions[i * 6 + 4] = nodes[b].y;
+      edgePositions[i * 6 + 5] = nodes[b].z;
+      for (let j = 0; j < 6; j++) {
+        edgeColors[i * 6 + j] = 0.08;
+      }
+    }
+
+    const edgeGeo = new THREE.BufferGeometry();
+    edgeGeo.setAttribute("position", new THREE.BufferAttribute(edgePositions, 3));
+    edgeGeo.setAttribute("color", new THREE.BufferAttribute(edgeColors, 3));
+
+    const edgeMat = new THREE.LineBasicMaterial({
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.6,
+      blending: THREE.AdditiveBlending,
+    });
+
+    const edgesMesh = new THREE.LineSegments(edgeGeo, edgeMat);
+    scene.add(edgesMesh);
+
+    const clock = new THREE.Clock();
+    const targetColor = new THREE.Color(0.15, 0.15, 0.2);
+    const currentColor = new THREE.Color(0.15, 0.15, 0.2);
+
     let frame = 0;
     const animate = () => {
       frame = requestAnimationFrame(animate);
-      brain.rotation.y += 0.003;
+      const t = clock.getElapsedTime();
+      const ref = sceneRef.current;
+      if (!ref) return;
+
+      currentColor.lerp(ref.targetColor, 0.02);
+      ref.activation += (ref.targetActivation - ref.activation) * 0.03;
+
+      (nodeMat.uniforms.uTime as { value: number }).value = t;
+
+      const nc = nodeGeo.getAttribute("color") as THREE.BufferAttribute;
+      const ns = nodeGeo.getAttribute("size") as THREE.BufferAttribute;
+      const gc = glowGeo.getAttribute("color") as THREE.BufferAttribute;
+
+      for (let i = 0; i < NODE_COUNT; i++) {
+        const pulse = Math.sin(t * 2 + i * 0.5) * 0.5 + 0.5;
+        const act = nodeActivations[i];
+        const blend = act * ref.activation;
+
+        const baseR = 0.15 + blend * (currentColor.r - 0.15);
+        const baseG = 0.15 + blend * (currentColor.g - 0.15);
+        const baseB = 0.2 + blend * (currentColor.b - 0.2);
+
+        nc.setXYZ(i,
+          baseR + pulse * blend * 0.3,
+          baseG + pulse * blend * 0.2,
+          baseB + pulse * blend * 0.1
+        );
+        ns.setX(i, (3 + Math.random() * 2) + blend * 4);
+
+        gc.setXYZ(i,
+          baseR * 0.4,
+          baseG * 0.4,
+          baseB * 0.4
+        );
+      }
+      nc.needsUpdate = true;
+      ns.needsUpdate = true;
+      gc.needsUpdate = true;
+
+      const ec = edgeGeo.getAttribute("color") as THREE.BufferAttribute;
+      for (let i = 0; i < edges.length; i++) {
+        const [a, b] = edges[i];
+        const avgAct = (nodeActivations[a] + nodeActivations[b]) / 2;
+        const blend = avgAct * ref.activation;
+        const wave = Math.sin(t * 3 + i * 0.3) * 0.5 + 0.5;
+
+        const r = 0.06 + blend * currentColor.r * 0.5 + wave * blend * 0.1;
+        const g = 0.06 + blend * currentColor.g * 0.5 + wave * blend * 0.1;
+        const bv = 0.06 + blend * currentColor.b * 0.5 + wave * blend * 0.1;
+
+        ec.setXYZ(i * 2, r, g, bv);
+        ec.setXYZ(i * 2 + 1, r, g, bv);
+      }
+      ec.needsUpdate = true;
+
+      const group = nodesMesh.parent!;
+      group.rotation.y = t * 0.15;
+      group.rotation.x = Math.sin(t * 0.1) * 0.1;
+
       renderer.render(scene, camera);
     };
+
+    // Group everything for rotation
+    const group = new THREE.Group();
+    scene.remove(nodesMesh, glowMesh, edgesMesh);
+    group.add(nodesMesh, glowMesh, edgesMesh);
+    scene.add(group);
+
     animate();
 
-    // Handle resize
     const observer = new ResizeObserver(() => {
       if (!container) return;
       renderer.setSize(container.clientWidth, container.clientHeight);
@@ -158,7 +329,12 @@ export default function BrainSidebar({ activeTopic }: Props) {
     });
     observer.observe(container);
 
-    sceneRef.current = { renderer, scene, camera, brain, animFrame: frame };
+    sceneRef.current = {
+      renderer, scene, camera, nodesMesh, edgesMesh, glowMesh,
+      nodes, edges, frame, clock,
+      targetColor, currentColor,
+      activation: 0, targetActivation: 0,
+    };
 
     return () => {
       cancelAnimationFrame(frame);
@@ -171,93 +347,129 @@ export default function BrainSidebar({ activeTopic }: Props) {
     };
   }, []);
 
-  // Fetch TRIBE v2 activation when topic changes
-  const fetchActivation = useCallback(async (topicName: string) => {
+  const applyProceduralActivation = useCallback((topic: Topic) => {
     if (!sceneRef.current) return;
-    setStatus("loading");
+    const rand = seededRandom(topic.name.length * 137 + topic.count);
+    const nodeGeo = sceneRef.current.nodesMesh.geometry;
+    const positions = nodeGeo.getAttribute("position") as THREE.BufferAttribute;
 
-    try {
-      const res = await fetch("/api/brain", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: topicName }),
-      });
-      const data: { activation: number[] | null } = await res.json();
+    const hotspots: THREE.Vector3[] = [];
+    const numHotspots = 2 + Math.floor(rand() * 3);
+    for (let h = 0; h < numHotspots; h++) {
+      const idx = Math.floor(rand() * NODE_COUNT);
+      hotspots.push(new THREE.Vector3(
+        positions.getX(idx),
+        positions.getY(idx),
+        positions.getZ(idx)
+      ));
+    }
 
-      if (!data.activation || !sceneRef.current) {
-        setStatus("unavailable");
-        return;
+    for (let i = 0; i < NODE_COUNT; i++) {
+      const pos = new THREE.Vector3(
+        positions.getX(i),
+        positions.getY(i),
+        positions.getZ(i)
+      );
+      let maxAct = 0;
+      for (const hs of hotspots) {
+        const dist = pos.distanceTo(hs);
+        const act = Math.exp(-dist * dist * 0.8);
+        maxAct = Math.max(maxAct, act);
       }
-
-      // Apply activation to vertex colors
-      const { brain } = sceneRef.current;
-      const colorAttr = brain.geometry.getAttribute("color") as THREE.BufferAttribute;
-      const vertexCount = colorAttr.count;
-      const activation = data.activation;
-
-      // Normalize to 0-1
-      const min = Math.min(...activation);
-      const max = Math.max(...activation);
-      const range = max - min || 1;
-
-      for (let i = 0; i < vertexCount; i++) {
-        // Map vertex index to activation index (tile if more vertices than activation values)
-        const actIdx = i % activation.length;
-        const normalized = (activation[actIdx] - min) / range;
-        const color = activationToColor(normalized);
-        colorAttr.setXYZ(i, color.r, color.g, color.b);
-      }
-      colorAttr.needsUpdate = true;
-      setStatus("idle");
-    } catch {
-      setStatus("unavailable");
+      nodeActivations[i] = maxAct * (0.6 + rand() * 0.4);
     }
   }, []);
 
-  // Reset brain to gray when no topic
-  const resetColors = useCallback(() => {
-    if (!sceneRef.current) return;
-    const { brain } = sceneRef.current;
-    const colorAttr = brain.geometry.getAttribute("color") as THREE.BufferAttribute;
-    for (let i = 0; i < colorAttr.count; i++) {
-      colorAttr.setXYZ(i, 0.2, 0.2, 0.2);
+  const applyTribeActivation = useCallback((activation: number[]) => {
+    // TRIBE v2 returns ~20,484 vertex activations on fsaverage5
+    // Map them onto our NODE_COUNT particles by sampling evenly
+    const step = Math.floor(activation.length / NODE_COUNT);
+    const min = Math.min(...activation);
+    const max = Math.max(...activation);
+    const range = max - min || 1;
+
+    for (let i = 0; i < NODE_COUNT; i++) {
+      const idx = Math.min(i * step, activation.length - 1);
+      nodeActivations[i] = (activation[idx] - min) / range;
     }
-    colorAttr.needsUpdate = true;
+  }, []);
+
+  const activateForTopic = useCallback(async (topic: Topic) => {
+    if (!sceneRef.current) return;
+    setStatus("active");
+
+    const color = new THREE.Color(DOMAIN_COLORS[topic.domain]);
+    sceneRef.current.targetColor = color;
+    sceneRef.current.targetActivation = 1;
+
+    // TODO: uncomment when TRIBE v2 sidecar + HF_TOKEN are configured
+    // try {
+    //   const res = await fetch("/api/brain", {
+    //     method: "POST",
+    //     headers: { "Content-Type": "application/json" },
+    //     body: JSON.stringify({ text: topic.name }),
+    //   });
+    //   const data: { activation: number[] | null } = await res.json();
+    //   if (data.activation && data.activation.length > 0) {
+    //     applyTribeActivation(data.activation);
+    //     setTribeAvailable(true);
+    //     return;
+    //   }
+    // } catch {
+    //   // Sidecar not running
+    // }
+
+    applyProceduralActivation(topic);
+  }, [applyProceduralActivation]);
+
+  const deactivate = useCallback(() => {
+    if (!sceneRef.current) return;
     setStatus("idle");
+    sceneRef.current.targetColor = new THREE.Color(0.15, 0.15, 0.2);
+    sceneRef.current.targetActivation = 0;
   }, []);
 
   useEffect(() => {
     if (activeTopic) {
-      fetchActivation(activeTopic.name);
+      activateForTopic(activeTopic);
     } else {
-      resetColors();
+      deactivate();
     }
-  }, [activeTopic, fetchActivation, resetColors]);
+  }, [activeTopic, activateForTopic, deactivate]);
 
   return (
     <div className="relative w-full h-full">
       <div ref={canvasRef} className="w-full h-full" />
 
-      {/* Overlay status */}
-      {status === "loading" && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="text-[10px] text-[#444] tracking-widest animate-pulse">
-            COMPUTING...
+      {status === "active" && activeTopic && (
+        <div className="absolute top-3 left-3 right-3 pointer-events-none">
+          <div
+            className="text-[10px] tracking-widest uppercase px-2 py-1 inline-block"
+            style={{
+              color: DOMAIN_COLORS[activeTopic.domain],
+              background: `${DOMAIN_COLORS[activeTopic.domain]}15`,
+              border: `1px solid ${DOMAIN_COLORS[activeTopic.domain]}33`,
+            }}
+          >
+            {activeTopic.domain}
           </div>
         </div>
       )}
 
-      {status === "unavailable" && (
-        <div className="absolute bottom-4 left-0 right-0 text-center pointer-events-none">
-          <p className="text-[10px] text-[#333]">Brain map unavailable</p>
-        </div>
-      )}
-
-      {/* Axis labels */}
-      <div className="absolute top-2 right-2 space-y-0.5 pointer-events-none">
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-px" style={{ background: "linear-gradient(to right, #0066ff, #ff0000)" }} />
-          <span className="text-[8px] text-[#333]">low → high</span>
+      <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between pointer-events-none">
+        {tribeAvailable && (
+          <span className="text-[8px] text-[#444] tracking-wider">
+            TRIBE v2 &middot; Meta
+          </span>
+        )}
+        <div className="flex items-center gap-1.5 ml-auto">
+          <div
+            className="w-3 h-px"
+            style={{ background: "linear-gradient(to right, #1a1a2e, #7c3aed, #ec4899)" }}
+          />
+          <span className="text-[8px] text-[#333]">
+            {tribeAvailable ? "fMRI prediction" : "neural activity"}
+          </span>
         </div>
       </div>
     </div>

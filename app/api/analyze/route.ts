@@ -1,9 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { SYSTEM_PROMPT, buildUserMessage } from "@/lib/system-prompt";
-import { Conversation, MindMirrorResult } from "@/lib/types";
+import { Conversation } from "@/lib/types";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,35 +14,60 @@ export async function POST(req: NextRequest) {
     };
 
     if (!conversations?.length) {
-      return NextResponse.json(
-        { error: "No conversations provided." },
-        { status: 400 }
-      );
+      return new Response(JSON.stringify({ error: "No conversations provided." }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     const userMessage = buildUserMessage(conversations);
 
-    const message = await client.messages.create({
+    const stream = client.messages.stream({
       model: "claude-sonnet-4-6",
       max_tokens: 4096,
       system: SYSTEM_PROMPT,
       messages: [{ role: "user", content: userMessage }],
     });
 
-    const rawText =
-      message.content[0].type === "text" ? message.content[0].text : "";
+    const encoder = new TextEncoder();
 
-    // Strip markdown fences if model wraps the JSON anyway
-    const jsonText = rawText
-      .replace(/^```(?:json)?\s*/i, "")
-      .replace(/\s*```$/i, "")
-      .trim();
+    const readable = new ReadableStream({
+      async start(controller) {
+        try {
+          for await (const event of stream) {
+            if (
+              event.type === "content_block_delta" &&
+              event.delta.type === "text_delta"
+            ) {
+              controller.enqueue(
+                encoder.encode(`data: ${JSON.stringify({ text: event.delta.text })}\n\n`)
+              );
+            }
+          }
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          controller.close();
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : "Stream failed";
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify({ error: msg })}\n\n`)
+          );
+          controller.close();
+        }
+      },
+    });
 
-    const result: MindMirrorResult = JSON.parse(jsonText);
-
-    return NextResponse.json({ result });
+    return new Response(readable, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+      },
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Analysis failed";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return new Response(JSON.stringify({ error: message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 }
