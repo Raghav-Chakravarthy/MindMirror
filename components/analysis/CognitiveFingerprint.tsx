@@ -87,8 +87,8 @@ export default function CognitiveFingerprint({ fingerprint }: Props) {
         <div className="h-px flex-1 bg-gradient-to-r from-purple-600/10 to-transparent" />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-        <div className="bg-white/70 backdrop-blur-xl border border-gray-100 shadow-sm rounded-3xl p-8 h-80 relative overflow-hidden group hover:shadow-md transition-shadow">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
+        <div className="bg-white/70 backdrop-blur-xl border border-gray-100 shadow-sm rounded-3xl p-8 h-[440px] relative overflow-hidden group hover:shadow-md transition-shadow">
           <div className="absolute top-0 left-0 w-full h-[1.5px] bg-gradient-to-r from-purple-500/10 via-transparent to-pink-500/10" />
           <ResponsiveContainer width="100%" height="100%">
             <RadarChart data={data} margin={{ top: 20, right: 30, bottom: 20, left: 30 }}>
@@ -103,7 +103,7 @@ export default function CognitiveFingerprint({ fingerprint }: Props) {
                 stroke="#9333ea"
                 fill="#9333ea"
                 fillOpacity={animated ? 0.08 : 0}
-                strokeWidth={2}
+                strokeWidth={3}
                 dot={{ r: 4, fill: "#9333ea", strokeWidth: 0 }}
                 animationDuration={1500}
                 animationEasing="ease-out"
@@ -111,19 +111,20 @@ export default function CognitiveFingerprint({ fingerprint }: Props) {
               <Tooltip
                 contentStyle={{
                   background: "rgba(255, 255, 255, 0.95)",
-                  border: "1px solid rgba(147, 51, 234, 0.2)",
+                  border: "none",
                   borderRadius: 12,
                   fontSize: 12,
                   color: "#000",
                   backdropFilter: "blur(8px)",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                  boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1)",
                 }}
               />
             </RadarChart>
           </ResponsiveContainer>
         </div>
 
-        <div className="space-y-6 py-2">
+        <div className="bg-white/70 backdrop-blur-xl border border-gray-100 shadow-sm rounded-3xl p-10 h-[440px] flex flex-col justify-center gap-6 relative overflow-hidden group hover:shadow-md transition-shadow">
+          <div className="absolute top-0 right-0 w-full h-[1.5px] bg-gradient-to-l from-purple-500/10 via-transparent to-emerald-500/10" />
           {(Object.entries(fingerprint) as [keyof CFType, number][]).map(
             ([key, value], idx) => (
               <div
@@ -142,7 +143,7 @@ export default function CognitiveFingerprint({ fingerprint }: Props) {
                     <span className="text-sm text-black font-data font-bold">{value}</span>
                   </div>
                 </div>
-                <div className="h-2.5 bg-black/[0.03] relative overflow-hidden rounded-full">
+                <div className="h-2 bg-black/[0.04] relative overflow-hidden rounded-full">
                   <div
                     className="h-full rounded-full"
                     style={{
