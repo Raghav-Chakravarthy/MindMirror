@@ -87,7 +87,7 @@ export default function AnalysisPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ texts: topicNames }),
-      }).catch(() => {});
+      }).catch(() => { });
     }
   }, [router]);
 
@@ -135,13 +135,13 @@ export default function AnalysisPage() {
           <span className="text-base font-bold tracking-[0.2em] text-white">
             MINDMIRROR
           </span>
-          <span className="text-sm text-white/40 ml-2 hidden sm:block">
+          <span className="text-sm text-white/55 ml-2 hidden sm:block">
             / {result.ARCHETYPE.name}
           </span>
         </div>
         <button
           onClick={() => router.push("/")}
-          className="text-sm text-white/40 hover:text-white transition-all duration-300 flex items-center gap-2 group"
+          className="text-sm text-white/55 hover:text-white transition-all duration-300 flex items-center gap-2 group"
         >
           <span className="group-hover:-translate-x-1 transition-transform duration-300">&larr;</span>
           <span>New Analysis</span>
@@ -149,7 +149,7 @@ export default function AnalysisPage() {
       </header>
 
       {/* Content */}
-      <main className="max-w-5xl mx-auto px-6 sm:px-10 py-16 space-y-28">
+      <main className="max-w-6xl mx-auto px-6 sm:px-10 py-16 space-y-28">
         <RevealSection>
           <ArchetypeHero archetype={result.ARCHETYPE} />
         </RevealSection>
@@ -202,12 +202,12 @@ export default function AnalysisPage() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-white/[0.06] px-8 py-6 flex items-center justify-between max-w-5xl mx-auto">
-        <span className="text-xs text-white/25">Built at Bitcamp 2026</span>
+      <footer className="border-t border-white/[0.06] px-8 py-6 flex items-center justify-between max-w-6xl mx-auto">
+        <span className="text-xs text-white/40">Built at Bitcamp 2026</span>
         <div className="flex items-center gap-4">
-          <span className="text-xs text-white/25">Claude + Gemini + Three.js + TRIBE v2</span>
+          <span className="text-xs text-white/40">Claude + Gemini + Three.js + TRIBE v2</span>
           <div className="w-1 h-1 rounded-full bg-white/10" />
-          <span className="text-xs text-white/15 font-data">{conversations.length} conversations analyzed</span>
+          <span className="text-xs text-white/30 font-data">{conversations.length} conversations analyzed</span>
         </div>
       </footer>
     </div>

@@ -550,7 +550,7 @@ export default function BrainViewer({ activeTopic, topics, onTopicSelect }: Prop
                         background: `linear-gradient(to right, #005973, #66d126, #f2eb1a, #ff5908, #b30d05, #610505)`,
                       }} />
                     </div>
-                    <span className="text-[10px] text-white/30 font-data w-8 text-right">
+                    <span className="text-[13px] text-white font-bold w-10 text-right tabular-nums tracking-tight">
                       {(region.mean_activation * 100).toFixed(0)}%
                     </span>
                   </div>

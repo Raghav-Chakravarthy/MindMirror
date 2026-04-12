@@ -169,7 +169,7 @@ export default function HomePage() {
           </span>
         </div>
         <div className="flex items-center gap-6">
-          <span className="text-xs text-white/30 tracking-widest uppercase hidden sm:block">
+          <span className="text-xs text-white/45 tracking-widest uppercase hidden sm:block">
             Cognitive Analysis Engine
           </span>
         </div>
@@ -178,7 +178,7 @@ export default function HomePage() {
       <div className="flex-1 flex flex-col items-center justify-center px-8 py-16 relative z-10">
         {step === "upload" && (
           <div
-            className="w-full max-w-2xl space-y-12"
+            className="w-full max-w-3xl space-y-12"
             style={{
               opacity: mounted ? 1 : 0,
               transform: mounted ? "translateY(0)" : "translateY(20px)",
@@ -187,18 +187,18 @@ export default function HomePage() {
           >
             {/* Hero */}
             <div className="space-y-6 text-center">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-purple-500/20 bg-purple-500/5 text-xs text-purple-400 tracking-widest uppercase animate-slide-up">
+              <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-purple-500/25 bg-purple-500/8 text-sm text-purple-300 tracking-widest uppercase animate-slide-up">
                 <div className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
                 AI Conversation Analysis
               </div>
-              <h1 className="text-5xl sm:text-6xl font-extrabold tracking-tight leading-[1.1]">
+              <h1 className="text-6xl sm:text-7xl font-extrabold tracking-tight leading-[1.08]">
                 <span className="gradient-text">What does your</span>
                 <br />
                 <span className="text-white">AI history say</span>
                 <br />
                 <span className="gradient-text">about you?</span>
               </h1>
-              <p className="text-white/55 leading-relaxed max-w-lg mx-auto text-base">
+              <p className="text-white/70 leading-relaxed max-w-xl mx-auto text-lg">
                 Upload your conversation exports from Claude, ChatGPT, or Gemini.
                 Get an uncomfortably accurate portrait of how you think, what you
                 avoid, and what you&apos;re outsourcing to AI.
@@ -210,14 +210,14 @@ export default function HomePage() {
               {FEATURES.map((f, i) => (
                 <div
                   key={f.label}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/[0.06] bg-white/[0.02] text-xs text-white/40 hover:text-white/60 hover:border-white/[0.12] transition-all duration-300"
+                  className="flex items-center gap-2 px-4 py-2 rounded-full border border-white/[0.08] bg-white/[0.03] text-sm text-white/55 hover:text-white/80 hover:border-white/[0.18] transition-all duration-300"
                   style={{
                     opacity: mounted ? 1 : 0,
                     transform: mounted ? "translateY(0)" : "translateY(10px)",
                     transition: `all 0.5s cubic-bezier(0.16, 1, 0.3, 1) ${400 + i * 80}ms`,
                   }}
                 >
-                  <span className="text-purple-400/60">{f.icon}</span>
+                  <span className="text-purple-400/80">{f.icon}</span>
                   <span>{f.label}</span>
                 </div>
               ))}
@@ -231,7 +231,7 @@ export default function HomePage() {
             {/* Divider */}
             <div className="flex items-center gap-4">
               <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/[0.08] to-transparent" />
-              <span className="text-xs text-white/30 tracking-widest uppercase">or</span>
+              <span className="text-sm text-white/45 tracking-widest uppercase">or</span>
               <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/[0.08] to-transparent" />
             </div>
 
@@ -242,7 +242,7 @@ export default function HomePage() {
                 sessionStorage.setItem("mindmirror_conversations", "[]");
                 router.push("/analysis");
               }}
-              className="w-full glass rounded-2xl px-6 py-6 text-base text-white/55 hover:text-white transition-all duration-500 group glow-hover press-effect"
+              className="w-full glass rounded-2xl px-8 py-7 text-lg text-white/65 hover:text-white transition-all duration-500 group glow-hover press-effect"
             >
               <div className="flex items-center justify-center gap-3">
                 <div className="w-8 h-8 rounded-full border border-purple-500/30 flex items-center justify-center group-hover:border-purple-500/60 group-hover:bg-purple-500/10 transition-all duration-300">
@@ -252,7 +252,7 @@ export default function HomePage() {
                   Try with sample data
                 </span>
               </div>
-              <span className="block text-xs text-white/35 mt-2">
+              <span className="block text-sm text-white/50 mt-2">
                 See a pre-analyzed developer profile — no upload needed
               </span>
             </button>
@@ -264,11 +264,11 @@ export default function HomePage() {
                 { name: "ChatGPT", steps: "Data Controls → Export", color: "#10b981" },
                 { name: "Gemini", steps: "Google Takeout → Gemini", color: "#3b82f6" },
               ].map((p) => (
-                <div key={p.name} className="border border-white/[0.06] rounded-xl px-4 py-4 hover:border-white/[0.12] transition-all duration-300 group cursor-default">
-                  <p className="text-xs font-bold tracking-wider mb-1 group-hover:tracking-widest transition-all duration-300" style={{ color: p.color }}>
+                <div key={p.name} className="border border-white/[0.08] rounded-xl px-5 py-5 hover:border-white/[0.18] transition-all duration-300 group cursor-default">
+                  <p className="text-sm font-bold tracking-wider mb-1 group-hover:tracking-widest transition-all duration-300" style={{ color: p.color }}>
                     {p.name}
                   </p>
-                  <p className="text-xs text-white/40 leading-relaxed">{p.steps}</p>
+                  <p className="text-sm text-white/55 leading-relaxed">{p.steps}</p>
                 </div>
               ))}
             </div>
@@ -359,10 +359,10 @@ export default function HomePage() {
 
       {/* Footer */}
       <footer className="relative z-10 border-t border-white/[0.06] px-8 py-4 flex items-center justify-between">
-        <span className="text-xs text-white/25">
+        <span className="text-xs text-white/40">
           Built at Bitcamp 2026
         </span>
-        <span className="text-xs text-white/25">
+        <span className="text-xs text-white/40">
           Claude + Gemini + Three.js + TRIBE v2
         </span>
       </footer>
