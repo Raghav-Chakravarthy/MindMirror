@@ -4,6 +4,9 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "MINDMIRROR",
   description: "A brutally honest cognitive analysis of your AI conversation history.",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({

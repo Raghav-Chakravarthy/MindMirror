@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import DropZone from "@/components/upload/DropZone";
 import { Conversation } from "@/lib/types";
 import { SAMPLE_RESULT } from "@/lib/sample-data";
@@ -167,12 +168,12 @@ export default function HomePage() {
         <HeroBrain />
         
         <header className="absolute top-0 left-0 right-0 z-20 px-8 py-6 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-2.5 h-2.5 rounded-full bg-purple-600 shadow-[0_0_10px_rgba(147,51,234,0.3)]" />
+          <Link href="/" className="flex items-center gap-3 group transition-opacity hover:opacity-80">
+            <div className="w-2.5 h-2.5 rounded-full bg-purple-600 shadow-[0_0_10px_rgba(147,51,234,0.3)] transition-transform group-hover:scale-110" />
             <span className="text-sm font-bold tracking-[0.3em] text-black">
               MINDMIRROR
             </span>
-          </div>
+          </Link>
           <div className="flex items-center gap-6">
             <span className="text-[10px] text-black/40 tracking-[0.2em] uppercase font-bold hidden sm:block">
               Cognitive Analysis Engine
@@ -216,7 +217,7 @@ export default function HomePage() {
                 <span className="text-purple-600">when nobody is watching?</span>
               </h2>
               <p className="text-black/60 text-lg leading-relaxed">
-                Upload your conversation exports from Claude, ChatGPT, or Gemini. 
+                Upload your conversation exports from Claude, ChatGPT, or Deepseek. 
                 Our engine extracts your latent thinking patterns, biases, and skills 
                 to build a high-resolution cognitive profile.
               </p>
@@ -250,7 +251,7 @@ export default function HomePage() {
                     {[
                       { name: "Claude", color: "#d97706" },
                       { name: "ChatGPT", color: "#10b981" },
-                      { name: "Gemini", color: "#3b82f6" },
+                      { name: "Deepseek", color: "#3b82f6" },
                     ].map((p) => (
                       <div key={p.name} className="text-center p-2 rounded-lg bg-gray-50/50">
                         <p className="text-[10px] font-bold uppercase tracking-tight" style={{ color: p.color }}>{p.name}</p>

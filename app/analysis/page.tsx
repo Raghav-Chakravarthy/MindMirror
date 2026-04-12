@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { MindMirrorResult, Conversation, Topic } from "@/lib/types";
 import ArchetypeHero from "@/components/analysis/ArchetypeHero";
 import CognitiveFingerprint from "@/components/analysis/CognitiveFingerprint";
@@ -130,7 +131,7 @@ export default function AnalysisPage() {
 
       {/* Header */}
       <header className="border-b border-gray-100 px-8 py-4 flex items-center justify-between sticky top-0 bg-white/80 backdrop-blur-xl z-20">
-        <div className="flex items-center gap-3">
+        <Link href="/" className="flex items-center gap-3 group transition-opacity hover:opacity-80">
           <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: result.ARCHETYPE.color, boxShadow: `0 0 10px ${result.ARCHETYPE.color}40` }} />
           <span className="text-sm font-bold tracking-[0.3em] text-black">
             MINDMIRROR
@@ -138,7 +139,7 @@ export default function AnalysisPage() {
           <span className="text-xs text-black/40 ml-2 hidden sm:block font-bold tracking-widest">
             / {result.ARCHETYPE.name.toUpperCase()}
           </span>
-        </div>
+        </Link>
         <button
           onClick={() => router.push("/")}
           className="text-xs font-bold tracking-widest text-black/40 hover:text-purple-600 transition-all duration-300 flex items-center gap-2 group uppercase"
