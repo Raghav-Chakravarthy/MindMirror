@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import DropZone from "@/components/upload/DropZone";
 import { Conversation } from "@/lib/types";
 import { SAMPLE_RESULT } from "@/lib/sample-data";
+import HeroBrain from "@/components/landing/HeroBrain";
+import TypingSlogan from "@/components/landing/TypingSlogan";
 
 type Step = "upload" | "parsing" | "analyzing" | "error";
 
@@ -24,10 +26,15 @@ export default function HomePage() {
   const [convCount, setConvCount] = useState(0);
   const [mounted, setMounted] = useState(false);
   const accumulatedRef = useRef("");
+  const uploadSectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  const scrollToUpload = () => {
+    uploadSectionRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
   async function handleFiles(
     files: Array<{ filename: string; content: string; platform: "claude" | "openai" | "gemini" }>
@@ -151,221 +158,211 @@ export default function HomePage() {
     }
   }
 
+  if (!mounted) return null;
+
   return (
-    <main className="min-h-screen flex flex-col relative overflow-hidden noise-bg">
-      {/* Ambient background orbs */}
-      <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] rounded-full bg-purple-500/[0.04] blur-[120px]" />
-        <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] rounded-full bg-pink-500/[0.03] blur-[120px]" />
-        <div className="absolute top-[40%] right-[20%] w-[300px] h-[300px] rounded-full bg-cyan-500/[0.02] blur-[100px]" />
-      </div>
+    <main className="min-h-screen bg-white text-black selection:bg-purple-100 selection:text-purple-900 transition-colors duration-1000">
+      {/* Hero Section */}
+      <section className="relative h-screen flex flex-col items-center justify-center overflow-hidden">
+        <HeroBrain />
+        
+        <header className="absolute top-0 left-0 right-0 z-20 px-8 py-6 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-2.5 h-2.5 rounded-full bg-purple-600 shadow-[0_0_10px_rgba(147,51,234,0.3)]" />
+            <span className="text-sm font-bold tracking-[0.3em] text-black">
+              MINDMIRROR
+            </span>
+          </div>
+          <div className="flex items-center gap-6">
+            <span className="text-[10px] text-black/40 tracking-[0.2em] uppercase font-bold hidden sm:block">
+              Cognitive Analysis Engine
+            </span>
+          </div>
+        </header>
 
-      {/* Header */}
-      <header className="relative z-10 border-b border-white/[0.06] px-8 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-2.5 h-2.5 rounded-full bg-purple-500 animate-glow-pulse" style={{ boxShadow: '0 0 10px #7c3aed' }} />
-          <span className="text-base font-bold tracking-[0.2em] text-white">
-            MINDMIRROR
-          </span>
-        </div>
-        <div className="flex items-center gap-6">
-          <span className="text-xs text-white/45 tracking-widest uppercase hidden sm:block">
-            Cognitive Analysis Engine
-          </span>
-        </div>
-      </header>
+        <div className="relative z-10 text-center space-y-8 px-6 max-w-4xl mx-auto">
+          <div className="space-y-4">
+            <h1 className="text-sm font-bold tracking-[0.4em] uppercase text-purple-600/60 animate-fade-in">
+              The AI Self-Reflection Tool
+            </h1>
+            <TypingSlogan />
+          </div>
 
-      <div className="flex-1 flex flex-col items-center justify-center px-8 py-16 relative z-10">
+          <div className="pt-8">
+            <button
+              onClick={scrollToUpload}
+              className="group flex flex-col items-center gap-4 mx-auto animate-bounce transition-opacity hover:opacity-100 opacity-60"
+            >
+              <span className="text-[10px] uppercase tracking-[0.3em] font-bold text-black/40 group-hover:text-purple-600 transition-colors">
+                Scroll to Begin
+              </span>
+              <div className="w-px h-12 bg-gradient-to-b from-purple-600/40 to-transparent" />
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* Content Section */}
+      <section 
+        ref={uploadSectionRef}
+        className="relative z-10 min-h-screen bg-white px-8 py-24 flex flex-col items-center"
+      >
         {step === "upload" && (
-          <div
-            className="w-full max-w-3xl space-y-12"
-            style={{
-              opacity: mounted ? 1 : 0,
-              transform: mounted ? "translateY(0)" : "translateY(20px)",
-              transition: "opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1)",
-            }}
-          >
-            {/* Hero */}
-            <div className="space-y-6 text-center">
-              <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-purple-500/25 bg-purple-500/8 text-sm text-purple-300 tracking-widest uppercase animate-slide-up">
-                <div className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
-                AI Conversation Analysis
-              </div>
-              <h1 className="text-6xl sm:text-7xl font-extrabold tracking-tight leading-[1.08]">
-                <span className="gradient-text">What does your</span>
-                <br />
-                <span className="text-white">AI history say</span>
-                <br />
-                <span className="gradient-text">about you?</span>
-              </h1>
-              <p className="text-white/70 leading-relaxed max-w-xl mx-auto text-lg">
-                Upload your conversation exports from Claude, ChatGPT, or Gemini.
-                Get an uncomfortably accurate portrait of how you think, what you
-                avoid, and what you&apos;re outsourcing to AI.
+          <div className="w-full max-w-4xl space-y-20">
+            {/* Intro Text */}
+            <div className="max-w-2xl mx-auto text-center space-y-6">
+              <h2 className="text-4xl sm:text-5xl font-bold tracking-tight text-black flex flex-col gap-2">
+                <span>Who are you</span>
+                <span className="text-purple-600">when nobody is watching?</span>
+              </h2>
+              <p className="text-black/60 text-lg leading-relaxed">
+                Upload your conversation exports from Claude, ChatGPT, or Gemini. 
+                Our engine extracts your latent thinking patterns, biases, and skills 
+                to build a high-resolution cognitive profile.
               </p>
             </div>
 
-            {/* Feature pills */}
-            <div className="flex flex-wrap justify-center gap-3">
-              {FEATURES.map((f, i) => (
+            {/* Feature Tags */}
+            <div className="flex flex-wrap justify-center gap-4">
+              {FEATURES.map((f) => (
                 <div
                   key={f.label}
-                  className="flex items-center gap-2 px-4 py-2 rounded-full border border-white/[0.08] bg-white/[0.03] text-sm text-white/55 hover:text-white/80 hover:border-white/[0.18] transition-all duration-300"
-                  style={{
-                    opacity: mounted ? 1 : 0,
-                    transform: mounted ? "translateY(0)" : "translateY(10px)",
-                    transition: `all 0.5s cubic-bezier(0.16, 1, 0.3, 1) ${400 + i * 80}ms`,
-                  }}
+                  className="px-5 py-2.5 rounded-full bg-gray-50 border border-gray-100 text-sm font-semibold text-black/70 hover:border-purple-200 hover:bg-purple-50/50 hover:text-purple-700 transition-all duration-300"
                 >
-                  <span className="text-purple-400/80">{f.icon}</span>
-                  <span>{f.label}</span>
+                  <span className="text-purple-400 mr-2">{f.icon}</span>
+                  {f.label}
                 </div>
               ))}
             </div>
 
-            {/* Upload area */}
-            <div className="glass rounded-2xl p-1 gradient-border">
-              <DropZone onReady={handleFiles} />
-            </div>
-
-            {/* Divider */}
-            <div className="flex items-center gap-4">
-              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/[0.08] to-transparent" />
-              <span className="text-sm text-white/45 tracking-widest uppercase">or</span>
-              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/[0.08] to-transparent" />
-            </div>
-
-            {/* Demo button */}
-            <button
-              onClick={() => {
-                sessionStorage.setItem("mindmirror_result", JSON.stringify(SAMPLE_RESULT));
-                sessionStorage.setItem("mindmirror_conversations", "[]");
-                router.push("/analysis");
-              }}
-              className="w-full glass rounded-2xl px-8 py-7 text-lg text-white/65 hover:text-white transition-all duration-500 group glow-hover press-effect"
-            >
-              <div className="flex items-center justify-center gap-3">
-                <div className="w-8 h-8 rounded-full border border-purple-500/30 flex items-center justify-center group-hover:border-purple-500/60 group-hover:bg-purple-500/10 transition-all duration-300">
-                  <div className="w-0 h-0 border-l-[7px] border-l-purple-400/60 border-y-[5px] border-y-transparent ml-0.5 group-hover:border-l-purple-400 transition-colors" />
+            {/* Main Action Area */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Upload Card */}
+              <div className="group relative">
+                <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-pink-500 rounded-2xl blur opacity-0 group-hover:opacity-10 transition duration-1000 group-hover:duration-200"></div>
+                <div className="relative bg-white border border-gray-100 rounded-2xl p-8 h-full shadow-sm hover:shadow-md transition-shadow">
+                  <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-purple-600" />
+                    Upload Conversations
+                  </h3>
+                  <DropZone onReady={handleFiles} />
+                  <div className="mt-8 grid grid-cols-3 gap-3">
+                    {[
+                      { name: "Claude", color: "#d97706" },
+                      { name: "ChatGPT", color: "#10b981" },
+                      { name: "Gemini", color: "#3b82f6" },
+                    ].map((p) => (
+                      <div key={p.name} className="text-center p-2 rounded-lg bg-gray-50/50">
+                        <p className="text-[10px] font-bold uppercase tracking-tight" style={{ color: p.color }}>{p.name}</p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <span className="font-semibold group-hover:tracking-wider transition-all duration-300">
-                  Try with sample data
-                </span>
               </div>
-              <span className="block text-sm text-white/50 mt-2">
-                See a pre-analyzed developer profile — no upload needed
-              </span>
-            </button>
 
-            {/* Export instructions */}
-            <div className="grid grid-cols-3 gap-3 text-center">
-              {[
-                { name: "Claude", steps: "Settings → Export Data", color: "#d97706" },
-                { name: "ChatGPT", steps: "Data Controls → Export", color: "#10b981" },
-                { name: "Gemini", steps: "Google Takeout → Gemini", color: "#3b82f6" },
-              ].map((p) => (
-                <div key={p.name} className="border border-white/[0.08] rounded-xl px-5 py-5 hover:border-white/[0.18] transition-all duration-300 group cursor-default">
-                  <p className="text-sm font-bold tracking-wider mb-1 group-hover:tracking-widest transition-all duration-300" style={{ color: p.color }}>
-                    {p.name}
-                  </p>
-                  <p className="text-sm text-white/55 leading-relaxed">{p.steps}</p>
+              {/* Sample Card */}
+              <button
+                onClick={() => {
+                  sessionStorage.setItem("mindmirror_result", JSON.stringify(SAMPLE_RESULT));
+                  sessionStorage.setItem("mindmirror_conversations", "[]");
+                  router.push("/analysis");
+                }}
+                className="group relative text-left"
+              >
+                <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-emerald-500 rounded-2xl blur opacity-0 group-hover:opacity-10 transition duration-1000 group-hover:duration-200"></div>
+                <div className="relative bg-white border border-gray-100 rounded-2xl p-8 h-full shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+                  <div>
+                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-black">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      View Sample Data
+                    </h3>
+                    <p className="text-black/50 text-sm leading-relaxed">
+                      Don&apos;t have your data ready? See exactly what we can uncover 
+                      using a pre-analyzed developer profile.
+                    </p>
+                  </div>
+                  
+                  <div className="mt-8">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-black text-white font-bold text-sm tracking-wide">
+                      Try Demo Analysis
+                      <span className="group-hover:translate-x-1 transition-transform">→</span>
+                    </div>
+                  </div>
                 </div>
-              ))}
+              </button>
             </div>
           </div>
         )}
 
         {(step === "parsing" || step === "analyzing") && (
-          <div className="w-full max-w-lg space-y-10 text-center animate-fade-in">
-            <div className="flex justify-center">
-              <div className="relative w-24 h-24">
-                <div className="absolute inset-0 rounded-full bg-purple-500/10 animate-ping" style={{ animationDuration: '2s' }} />
-                <div className="absolute inset-2 rounded-full bg-purple-500/15 animate-ping" style={{ animationDuration: '2.5s' }} />
-                <div className="absolute inset-4 rounded-full bg-gradient-to-br from-purple-500/30 to-pink-500/30 animate-pulse" />
-                <div className="absolute inset-[38%] rounded-full bg-white/80" />
+          <div className="w-full max-w-2xl py-20 space-y-12 animate-fade-in">
+            <div className="flex flex-col items-center gap-8">
+              <div className="relative w-32 h-32">
+                <div className="absolute inset-0 rounded-full border border-purple-100 animate-ping" />
+                <div className="absolute inset-4 rounded-full border-2 border-purple-500/20 border-t-purple-600 animate-spin" />
+                <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 text-center text-[10px] font-bold tracking-widest text-purple-600">
+                  {step === "parsing" ? "PARSING" : "ANALYZING"}
+                </div>
+              </div>
+              
+              <div className="text-center space-y-2">
+                <p className="text-2xl font-bold text-black">{statusMsg}</p>
+                {convCount > 0 && (
+                  <p className="text-sm text-black/40 font-medium">
+                    {convCount} distinct conversation threads identified
+                  </p>
+                )}
               </div>
             </div>
 
-            <div className="space-y-3">
-              <p className="text-white/80 text-base font-medium">{statusMsg}</p>
-              {convCount > 0 && step === "analyzing" && (
-                <p className="text-xs text-white/35 tracking-[0.2em] uppercase animate-slide-up">
-                  {convCount} conversations · building cognitive profile
-                </p>
-              )}
-            </div>
-
-            {/* Progress stages */}
-            <div className="flex items-center justify-center gap-2">
-              {["Parse", "Analyze", "Profile"].map((stage, i) => {
-                const isActive = (step === "parsing" && i === 0) || (step === "analyzing" && i <= 1);
-                const isDone = (step === "analyzing" && i === 0);
-                return (
-                  <div key={stage} className="flex items-center gap-2">
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-all duration-500 ${
-                      isDone ? "bg-purple-500/30 text-purple-300" :
-                      isActive ? "bg-purple-500/20 text-purple-400 animate-pulse" :
-                      "bg-white/5 text-white/20"
-                    }`}>
-                      {isDone ? "✓" : i + 1}
-                    </div>
-                    <span className={`text-[10px] tracking-wider uppercase transition-colors duration-300 ${isActive ? "text-white/50" : "text-white/20"}`}>
-                      {stage}
-                    </span>
-                    {i < 2 && <div className={`w-8 h-px transition-colors duration-500 ${isActive ? "bg-purple-500/30" : "bg-white/5"}`} />}
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="text-left glass rounded-2xl p-6 h-48 flex flex-col">
-              <div className="flex items-center gap-2 mb-3 flex-shrink-0">
-                <div className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" />
-                <p className="text-xs text-purple-400/70 uppercase tracking-[0.15em] font-semibold">
-                  Live Analysis
-                </p>
+            <div className="bg-gray-50/50 border border-gray-100 rounded-3xl p-8 space-y-6">
+              <div className="flex items-center gap-3">
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-xs font-bold uppercase tracking-widest text-black/40">
+                  Neural Stream Insight
+                </span>
               </div>
-              <div className="flex-1 overflow-hidden relative">
-                <div className="absolute inset-0 overflow-y-auto flex flex-col-reverse">
-                  <p className="text-sm text-white/50 font-data leading-relaxed break-all whitespace-pre-wrap">
-                    {streamPreview || <span className="text-white/20">Waiting for data...</span>}
-                    <span className="inline-block w-[2px] h-4 bg-purple-400/80 ml-0.5 animate-pulse" />
+              <div className="h-40 overflow-hidden relative">
+                <div className="absolute inset-0 flex flex-col-reverse">
+                  <p className="text-sm text-black/60 font-data leading-relaxed break-all whitespace-pre-wrap">
+                    {streamPreview || "Awaiting signal..."}
+                    <span className="inline-block w-1.5 h-3 bg-purple-500 ml-1 animate-pulse" />
                   </p>
                 </div>
-                <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-[rgba(14,14,22,0.95)] to-transparent pointer-events-none z-10" />
               </div>
             </div>
           </div>
         )}
 
         {step === "error" && (
-          <div className="max-w-md space-y-6 text-center animate-scale-in">
-            <div className="glass rounded-2xl p-8 border-red-500/20 space-y-4">
-              <div className="w-12 h-12 mx-auto rounded-full bg-red-500/10 flex items-center justify-center">
-                <span className="text-red-400 text-lg">!</span>
+          <div className="w-full max-w-lg py-20 text-center space-y-8 animate-scale-in">
+            <div className="bg-red-50 border border-red-100 rounded-2xl p-8">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-red-600 font-bold">!</span>
               </div>
-              <p className="text-base text-red-400">{error}</p>
+              <p className="text-red-900 font-bold">{error}</p>
             </div>
             <button
               onClick={() => { setStep("upload"); setError(null); }}
-              className="text-sm text-white/40 hover:text-white transition-all duration-300 group flex items-center gap-2 mx-auto"
+              className="px-8 py-3 rounded-xl bg-black text-white font-bold hover:bg-gray-800 transition-colors"
             >
-              <span className="group-hover:-translate-x-1 transition-transform duration-300">&larr;</span>
-              <span>Try again</span>
+              Try Again
             </button>
           </div>
         )}
-      </div>
 
-      {/* Footer */}
-      <footer className="relative z-10 border-t border-white/[0.06] px-8 py-4 flex items-center justify-between">
-        <span className="text-xs text-white/40">
-          Built at Bitcamp 2026
-        </span>
-        <span className="text-xs text-white/40">
-          Claude + Gemini + Three.js + TRIBE v2
-        </span>
-      </footer>
+        {/* Footer */}
+        <footer className="mt-auto pt-24 w-full flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-gray-50 pt-8">
+          <span className="text-[10px] font-bold tracking-[0.2em] text-black/30 uppercase">
+            Built at Bitcamp 2026
+          </span>
+          <div className="flex items-center gap-6">
+            <span className="text-[10px] font-bold tracking-[0.2em] text-black/30 uppercase">
+              TRIBE v2 · fsaverage5
+            </span>
+          </div>
+        </footer>
+      </section>
     </main>
   );
 }
