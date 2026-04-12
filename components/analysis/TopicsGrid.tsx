@@ -42,24 +42,24 @@ export default function TopicsGrid({ topics, activeTopic, onTopicSelect }: Props
   }, []);
 
   return (
-    <section ref={sectionRef} className="space-y-6">
+    <section ref={sectionRef} className="space-y-8">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <div className="w-2 h-2 rounded-full bg-cyan-500/60" />
-          <h2 className="text-sm tracking-[0.2em] uppercase text-white/50 font-bold">Topics</h2>
-          <div className="h-px w-16 bg-gradient-to-r from-cyan-500/20 to-transparent" />
+          <div className="w-1.5 h-1.5 rounded-full bg-cyan-600" />
+          <h2 className="text-xs tracking-[0.3em] uppercase text-black/40 font-bold">Key Topics</h2>
+          <div className="h-px w-24 bg-gradient-to-r from-cyan-600/10 to-transparent" />
         </div>
-        <span className="text-xs text-white/35 font-data">{topics.length} identified</span>
+        <span className="text-[10px] font-bold tracking-widest text-black/20 uppercase">{topics.length} topics identified</span>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-4">
         {sorted.map((topic, idx) => {
           const domainColor = DOMAIN_COLORS[topic.domain];
           const isActive = activeTopic?.name === topic.name;
           return (
             <div
               key={`${topic.name}-${idx}`}
-              className="glass rounded-xl p-5 sm:p-6 cursor-pointer transition-all duration-400 group relative overflow-hidden glow-hover press-effect"
+              className="bg-white/70 backdrop-blur-xl border border-gray-100 rounded-2xl p-6 sm:p-8 cursor-pointer shadow-sm hover:shadow-md transition-all duration-500 group relative overflow-hidden press-effect"
               onClick={() => onTopicSelect(isActive ? null : topic)}
               style={{
                 borderColor: isActive ? `${domainColor}44` : undefined,
@@ -69,80 +69,80 @@ export default function TopicsGrid({ topics, activeTopic, onTopicSelect }: Props
               }}
             >
               <div
-                className="absolute inset-0 transition-opacity duration-500 pointer-events-none rounded-xl"
+                className="absolute inset-0 transition-opacity duration-500 pointer-events-none"
                 style={{
-                  background: `linear-gradient(135deg, ${domainColor}0d, transparent 60%)`,
+                  background: `linear-gradient(135deg, ${domainColor}08, transparent 60%)`,
                   opacity: isActive ? 1 : 0,
                 }}
               />
               {isActive && (
-                <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-full" style={{ backgroundColor: domainColor }} />
+                <div className="absolute left-0 top-0 bottom-0 w-[4px] rounded-full" style={{ backgroundColor: domainColor }} />
               )}
 
               <div className="relative">
-                <div className="flex items-start justify-between gap-4 mb-3">
-                  <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-start justify-between gap-4 mb-4">
+                  <div className="flex items-center gap-4 flex-wrap">
                     <span
-                      className="text-[10px] px-2.5 py-1 uppercase tracking-wider font-bold rounded-full transition-all duration-300 group-hover:scale-105"
+                      className="text-[10px] px-2.5 py-1 uppercase tracking-[0.2em] font-black rounded-lg transition-all duration-300 group-hover:scale-105"
                       style={{
                         color: domainColor,
-                        border: `1px solid ${domainColor}44`,
-                        background: `${domainColor}15`,
+                        border: `1.5px solid ${domainColor}22`,
+                        background: `${domainColor}0d`,
                       }}
                     >
                       {topic.domain}
                     </span>
-                    <span className="text-base font-semibold text-white/85 group-hover:text-white transition-colors duration-300">
+                    <span className="text-xl font-bold text-black group-hover:text-purple-700 transition-colors duration-300">
                       {topic.name}
                     </span>
                     {topic.is_returning && (
-                      <span className="text-xs text-white/35 flex items-center gap-1">
-                        <span style={{ color: domainColor }}>&#x21BA;</span> returning
+                      <span className="text-[10px] text-black/30 font-bold uppercase tracking-widest flex items-center gap-1.5">
+                        <span style={{ color: domainColor }}>&#x21BA;</span> returning theme
                       </span>
                     )}
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <span className="text-lg font-bold font-data" style={{ color: domainColor }}>
+                    <span className="text-2xl font-black font-data" style={{ color: domainColor }}>
                       {topic.count}
                     </span>
-                    <span className="text-xs text-white/30">&times;</span>
+                    <span className="text-xs text-black/20 font-bold ml-1">&times;</span>
                   </div>
                 </div>
 
-                <div className="h-1.5 bg-white/[0.05] mb-3 rounded-full overflow-hidden">
+                <div className="h-2 bg-black/[0.03] mb-5 rounded-full overflow-hidden">
                   <div
                     className="h-full rounded-full"
                     style={{
                       width: animated ? `${(topic.count / maxCount) * 100}%` : "0%",
-                      background: `linear-gradient(to right, ${domainColor}88, ${domainColor})`,
-                      boxShadow: `0 0 8px ${domainColor}44`,
-                      transition: `width 1s cubic-bezier(0.16, 1, 0.3, 1) ${300 + idx * 60}ms`,
+                      background: `linear-gradient(to right, ${domainColor}66, ${domainColor})`,
+                      boxShadow: `0 0 12px ${domainColor}22`,
+                      transition: `width 1.2s cubic-bezier(0.16, 1, 0.3, 1) ${300 + idx * 60}ms`,
                     }}
                   />
                 </div>
 
-                <div className="flex items-center gap-4 mb-3">
-                  <span className="text-xs text-white/40 w-12 font-semibold">DEPTH</span>
-                  <div className="flex-1 h-1 bg-white/[0.05] rounded-full overflow-hidden">
+                <div className="flex items-center gap-6 mb-5">
+                  <span className="text-[10px] font-black tracking-widest text-black/40 w-16">DEPTH Map</span>
+                  <div className="flex-1 h-1.5 bg-black/[0.03] rounded-full overflow-hidden">
                     <div
                       className="h-full rounded-full"
                       style={{
                         width: animated ? `${topic.depth_score}%` : "0%",
                         background: topic.depth_score > 60
-                          ? "linear-gradient(to right, #10b981, #34d399)"
+                          ? "linear-gradient(to right, #059669, #10b981)"
                           : topic.depth_score > 30
-                          ? "linear-gradient(to right, #3b82f6, #60a5fa)"
-                          : "linear-gradient(to right, #ef4444, #f87171)",
-                        transition: `width 0.8s cubic-bezier(0.16, 1, 0.3, 1) ${500 + idx * 60}ms`,
+                          ? "linear-gradient(to right, #2563eb, #3b82f6)"
+                          : "linear-gradient(to right, #dc2626, #ef4444)",
+                        transition: `width 1s cubic-bezier(0.16, 1, 0.3, 1) ${500 + idx * 60}ms`,
                       }}
                     />
                   </div>
-                  <span className="text-xs text-white/40 font-data w-6 text-right">
-                    {topic.depth_score}
+                  <span className="text-xs text-black font-data font-black text-right min-w-[32px]">
+                    {topic.depth_score}%
                   </span>
                 </div>
 
-                <p className="text-sm text-white/50 italic leading-relaxed group-hover:text-white/75 transition-colors duration-300">
+                <p className="text-base text-black/60 italic leading-relaxed font-medium group-hover:text-black/80 transition-colors duration-300">
                   {topic.verdict}
                 </p>
               </div>

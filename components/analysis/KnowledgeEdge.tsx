@@ -31,37 +31,36 @@ export default function KnowledgeEdge({ edges }: Props) {
   }, [edges]);
 
   return (
-    <section ref={sectionRef} className="space-y-6">
+    <section ref={sectionRef} className="space-y-8">
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-2 h-2 rounded-full bg-emerald-500/60" />
-        <h2 className="text-sm tracking-[0.2em] uppercase text-white/50 font-bold">
+        <div className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+        <h2 className="text-xs tracking-[0.3em] uppercase text-black/40 font-bold">
           Knowledge Edge
         </h2>
-        <div className="h-px flex-1 bg-gradient-to-r from-emerald-500/20 to-transparent" />
+        <div className="h-px flex-1 bg-gradient-to-r from-emerald-600/10 to-transparent" />
       </div>
-      <p className="text-sm text-white/45">
-        Unusual knowledge areas that give you a competitive advantage.
+      <p className="text-sm font-medium text-black/40 tracking-wide">
+        Specific informational clusters that provide unique leverage.
       </p>
 
-      <div className="grid grid-cols-1 gap-3">
+      <div className="grid grid-cols-1 gap-4">
         {edges.map((edge, i) => (
           <div
             key={i}
-            className="glass rounded-xl px-6 py-5 flex items-start gap-4 transition-all duration-500 group glow-hover relative overflow-hidden press-effect"
+            className="bg-white/70 backdrop-blur-xl border border-gray-100 shadow-sm rounded-2xl px-6 py-6 flex items-start gap-5 transition-all duration-500 group hover:shadow-md relative overflow-hidden press-effect"
             style={{
               opacity: revealed.has(i) ? 1 : 0,
               transform: revealed.has(i) ? "translateX(0) scale(1)" : "translateX(-12px) scale(0.98)",
             }}
           >
             <div
-              className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none rounded-xl"
-              style={{ background: "linear-gradient(135deg, rgba(16, 185, 129, 0.06), transparent 60%)" }}
+              className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+              style={{ background: "linear-gradient(135deg, rgba(16, 185, 129, 0.04), transparent 60%)" }}
             />
             <div className="relative mt-1 flex-shrink-0">
-              <span className="text-emerald-400 text-sm group-hover:text-emerald-300 transition-colors">◆</span>
-              <div className="absolute inset-0 bg-emerald-400/20 blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <span className="text-emerald-600 text-lg group-hover:scale-110 transition-transform inline-block">◆</span>
             </div>
-            <p className="text-base text-white/65 leading-relaxed relative group-hover:text-white/90 transition-colors duration-300">
+            <p className="text-lg font-bold text-black/60 leading-relaxed relative group-hover:text-black/80 transition-colors duration-300">
               {edge}
             </p>
           </div>

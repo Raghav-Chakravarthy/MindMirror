@@ -78,56 +78,57 @@ export default function CognitiveFingerprint({ fingerprint }: Props) {
   );
 
   return (
-    <section ref={sectionRef} className="space-y-6">
+    <section ref={sectionRef} className="space-y-8">
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-2 h-2 rounded-full bg-purple-500/60" />
-        <h2 className="text-sm tracking-[0.2em] uppercase text-white/50 font-bold">
+        <div className="w-1.5 h-1.5 rounded-full bg-purple-600" />
+        <h2 className="text-xs tracking-[0.3em] uppercase text-black/40 font-bold">
           Cognitive Fingerprint
         </h2>
-        <div className="h-px flex-1 bg-gradient-to-r from-purple-500/20 to-transparent" />
+        <div className="h-px flex-1 bg-gradient-to-r from-purple-600/10 to-transparent" />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="glass rounded-2xl p-6 h-80 relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-purple-500/20 via-transparent to-pink-500/10" />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+        <div className="bg-white/70 backdrop-blur-xl border border-gray-100 shadow-sm rounded-3xl p-8 h-80 relative overflow-hidden group hover:shadow-md transition-shadow">
+          <div className="absolute top-0 left-0 w-full h-[1.5px] bg-gradient-to-r from-purple-500/10 via-transparent to-pink-500/10" />
           <ResponsiveContainer width="100%" height="100%">
             <RadarChart data={data} margin={{ top: 20, right: 30, bottom: 20, left: 30 }}>
-              <PolarGrid stroke="#ffffff10" />
+              <PolarGrid stroke="#00000010" />
               <PolarAngleAxis
                 dataKey="dimension"
-                tick={{ fill: "rgba(255,255,255,0.5)", fontSize: 11 }}
+                tick={{ fill: "rgba(0,0,0,0.5)", fontSize: 11, fontWeight: 700 }}
               />
               <Radar
                 name="You"
                 dataKey="value"
-                stroke="#7c3aed"
-                fill="#7c3aed"
-                fillOpacity={animated ? 0.15 : 0}
+                stroke="#9333ea"
+                fill="#9333ea"
+                fillOpacity={animated ? 0.08 : 0}
                 strokeWidth={2}
-                dot={{ r: 4, fill: "#7c3aed", strokeWidth: 0 }}
+                dot={{ r: 4, fill: "#9333ea", strokeWidth: 0 }}
                 animationDuration={1500}
                 animationEasing="ease-out"
               />
               <Tooltip
                 contentStyle={{
-                  background: "rgba(10, 10, 15, 0.95)",
-                  border: "1px solid rgba(124, 58, 237, 0.3)",
-                  borderRadius: 10,
+                  background: "rgba(255, 255, 255, 0.95)",
+                  border: "1px solid rgba(147, 51, 234, 0.2)",
+                  borderRadius: 12,
                   fontSize: 12,
-                  color: "#e8e8e8",
+                  color: "#000",
                   backdropFilter: "blur(8px)",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
                 }}
               />
             </RadarChart>
           </ResponsiveContainer>
         </div>
 
-        <div className="space-y-5 py-2">
+        <div className="space-y-6 py-2">
           {(Object.entries(fingerprint) as [keyof CFType, number][]).map(
             ([key, value], idx) => (
               <div
                 key={key}
-                className="space-y-2 transition-all duration-500"
+                className="space-y-3 transition-all duration-500"
                 style={{
                   opacity: animated ? 1 : 0,
                   transform: animated ? "translateX(0)" : "translateX(12px)",
@@ -135,20 +136,20 @@ export default function CognitiveFingerprint({ fingerprint }: Props) {
                 }}
               >
                 <div className="flex justify-between items-baseline">
-                  <span className="text-sm text-white/60">{LABELS[key]}</span>
+                  <span className="text-sm font-bold text-black/60 tracking-tight">{LABELS[key]}</span>
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] text-white/30 uppercase tracking-wider">{getLabel(value)}</span>
-                    <span className="text-sm text-white/80 font-data font-bold">{value}</span>
+                    <span className="text-[10px] text-black/25 uppercase tracking-widest font-black">{getLabel(value)}</span>
+                    <span className="text-sm text-black font-data font-bold">{value}</span>
                   </div>
                 </div>
-                <div className="h-2 bg-white/[0.05] relative overflow-hidden rounded-full">
+                <div className="h-2.5 bg-black/[0.03] relative overflow-hidden rounded-full">
                   <div
                     className="h-full rounded-full"
                     style={{
                       width: animated ? `${value}%` : "0%",
                       background: getBarGradient(value),
-                      boxShadow: value > 70 ? `0 0 10px ${getBarColor(value)}44` : "none",
-                      transition: `width 1s cubic-bezier(0.16, 1, 0.3, 1) ${300 + idx * 100}ms`,
+                      boxShadow: value > 70 ? `0 0 12px ${getBarColor(value)}22` : "none",
+                      transition: `width 1.2s cubic-bezier(0.16, 1, 0.3, 1) ${300 + idx * 100}ms`,
                     }}
                   />
                 </div>

@@ -25,22 +25,22 @@ export default function ArchetypeHero({ archetype }: Props) {
       />
 
       <div
-        className="relative border rounded-2xl p-10 sm:p-14 space-y-6"
+        className="relative border rounded-3xl p-10 sm:p-14 space-y-8 shadow-sm transition-shadow duration-500 hover:shadow-md"
         style={{
-          borderColor: `${archetype.color}33`,
-          background: `linear-gradient(135deg, ${archetype.color}0a, transparent 60%)`,
+          borderColor: `${archetype.color}22`,
+          background: `rgba(255, 255, 255, 0.5)`,
         }}
       >
-        <div className="absolute top-0 left-0 w-full h-px" style={{ background: `linear-gradient(to right, ${archetype.color}33, transparent)` }} />
+        <div className="absolute top-0 left-0 w-full h-[2px]" style={{ background: `linear-gradient(to right, ${archetype.color}44, transparent)` }} />
 
         <div className="flex items-start justify-between gap-4">
-          <div className="space-y-5">
+          <div className="space-y-6">
             <div
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs tracking-[0.2em] uppercase font-semibold transition-all duration-700"
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] tracking-[0.3em] uppercase font-bold transition-all duration-700"
               style={{
                 color: archetype.color,
-                border: `1px solid ${archetype.color}33`,
-                background: `${archetype.color}0d`,
+                border: `1.5px solid ${archetype.color}22`,
+                background: `${archetype.color}08`,
                 opacity: mounted ? 1 : 0,
                 transform: mounted ? "translateY(0)" : "translateY(8px)",
               }}
@@ -49,9 +49,9 @@ export default function ArchetypeHero({ archetype }: Props) {
               Your Archetype
             </div>
             <h1
-              className="text-5xl sm:text-7xl font-extrabold tracking-tight leading-[0.95] transition-all duration-1000"
+              className="text-6xl sm:text-8xl font-black tracking-tight leading-[0.9] transition-all duration-1000"
               style={{
-                color: archetype.color,
+                color: '#000',
                 opacity: mounted ? 1 : 0,
                 transform: mounted ? "translateY(0)" : "translateY(16px)",
                 transitionDelay: "100ms",
@@ -60,23 +60,23 @@ export default function ArchetypeHero({ archetype }: Props) {
               {archetype.name}
             </h1>
           </div>
-          <div className="flex flex-col items-center gap-3 mt-2">
+          <div className="flex flex-col items-center gap-4 mt-2">
             <div
-              className="w-5 h-5 rounded-full animate-glow-pulse"
-              style={{ backgroundColor: archetype.color, boxShadow: `0 0 24px ${archetype.color}88, 0 0 60px ${archetype.color}33` }}
+              className="w-5 h-5 rounded-full shadow-[0_0_20px_rgba(0,0,0,0.05)]"
+              style={{ backgroundColor: archetype.color, border: '4px solid white' }}
             />
             <div
               className="w-px transition-all duration-1000"
               style={{
-                background: `linear-gradient(to bottom, ${archetype.color}66, transparent)`,
-                height: mounted ? "64px" : "0px",
+                background: `linear-gradient(to bottom, ${archetype.color}44, transparent)`,
+                height: mounted ? "80px" : "0px",
                 transitionDelay: "300ms",
               }}
             />
           </div>
         </div>
         <p
-          className="text-white/75 text-xl leading-relaxed max-w-2xl transition-all duration-700"
+          className="text-black/60 text-2xl font-medium leading-relaxed max-w-2xl transition-all duration-700"
           style={{
             opacity: mounted ? 1 : 0,
             transform: mounted ? "translateY(0)" : "translateY(12px)",
@@ -86,15 +86,15 @@ export default function ArchetypeHero({ archetype }: Props) {
           {archetype.tagline}
         </p>
 
-        <div className="pt-4 flex gap-[2px] overflow-hidden">
+        <div className="pt-6 flex gap-[3px] overflow-hidden">
           {Array.from({ length: 40 }).map((_, i) => (
             <div
               key={i}
-              className="h-[2px] flex-1 rounded-full transition-all duration-500"
+              className="h-[3px] flex-1 rounded-full transition-all duration-500"
               style={{
                 backgroundColor: archetype.color,
-                opacity: mounted ? 0.08 + (i / 40) * 0.5 : 0,
-                transitionDelay: `${300 + i * 20}ms`,
+                opacity: mounted ? 0.05 + (i / 40) * 0.3 : 0,
+                transitionDelay: `${300 + i * 15}ms`,
               }}
             />
           ))}

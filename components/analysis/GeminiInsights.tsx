@@ -31,59 +31,59 @@ export default function GeminiInsights({ data }: Props) {
   if (!data.topics?.length && !data.patterns?.length) return null;
 
   return (
-    <section className="space-y-6">
+    <section className="space-y-8">
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-2 h-2 rounded-full bg-blue-500/60" />
-        <h2 className="text-sm tracking-[0.2em] uppercase text-white/50 font-bold">
-          Gemini Topic Extraction
+        <div className="w-1.5 h-1.5 rounded-full bg-blue-600" />
+        <h2 className="text-xs tracking-[0.3em] uppercase text-black/40 font-bold">
+          Gemini Signal Extraction
         </h2>
-        <div className="h-px flex-1 bg-gradient-to-r from-blue-500/20 to-transparent" />
-        <span className="text-xs text-white/30 font-data">
+        <div className="h-px flex-1 bg-gradient-to-r from-blue-600/10 to-transparent" />
+        <span className="text-[10px] font-black tracking-widest text-blue-600/40 uppercase">
           Gemini 2.0 Flash
         </span>
       </div>
 
       {data.primary_domain && (
-        <div className="flex items-center gap-4 text-sm">
-          <span className="text-white/45">Primary Domain:</span>
-          <span
-            className="px-3 py-1 font-bold uppercase tracking-wider text-xs rounded-full"
-            style={{
-              color: CATEGORY_COLORS[data.primary_domain] ?? "#6b7280",
-              border: `1px solid ${(CATEGORY_COLORS[data.primary_domain] ?? "#6b7280")}44`,
-              background: `${(CATEGORY_COLORS[data.primary_domain] ?? "#6b7280")}15`,
-            }}
-          >
-            {data.primary_domain}
-          </span>
+        <div className="flex items-center gap-6 text-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-black uppercase tracking-widest text-black/30">Primary Domain</span>
+            <span
+              className="px-3 py-1 font-black uppercase tracking-widest text-[10px] rounded-lg shadow-sm"
+              style={{
+                color: CATEGORY_COLORS[data.primary_domain] ?? "#6b7280",
+                border: `1.5px solid ${(CATEGORY_COLORS[data.primary_domain] ?? "#6b7280")}22`,
+                background: `${(CATEGORY_COLORS[data.primary_domain] ?? "#6b7280")}0d`,
+              }}
+            >
+              {data.primary_domain}
+            </span>
+          </div>
           {data.curiosity_breadth && (
-            <>
-              <span className="text-white/20">|</span>
-              <span className="text-white/45">Breadth:</span>
-              <span className="text-white/65">{data.curiosity_breadth}</span>
-            </>
+            <div className="flex items-center gap-2 border-l border-gray-100 pl-6">
+              <span className="text-[10px] font-black uppercase tracking-widest text-black/30">Breadth</span>
+              <span className="text-sm font-bold text-black/60">{data.curiosity_breadth}</span>
+            </div>
           )}
         </div>
       )}
 
       {data.topics && data.topics.length > 0 && (
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-3">
           {data.topics.slice(0, 15).map((topic, i) => {
             const color = CATEGORY_COLORS[topic.category] ?? "#6b7280";
             return (
               <div
                 key={i}
-                className="glass rounded-lg px-3.5 py-2 group hover:translate-y-[-1px] transition-all duration-200"
+                className="bg-white border border-gray-100 rounded-xl px-4 py-2.5 shadow-sm hover:shadow-md hover:translate-y-[-2px] transition-all duration-300 group cursor-default"
                 style={{
-                  borderColor: `${color}33`,
-                  background: `${color}0d`,
+                  borderColor: `${color}15`,
                 }}
               >
-                <span className="text-sm font-semibold text-white/70 group-hover:text-white/90 transition-colors">
+                <span className="text-sm font-bold text-black/70 group-hover:text-black transition-colors">
                   {topic.name}
                 </span>
-                <span className="text-xs text-white/30 ml-2 font-data">
-                  ~{topic.count}&times;
+                <span className="text-[10px] text-black/20 ml-2 font-black tracking-tighter">
+                  {topic.count}&times;
                 </span>
               </div>
             );
@@ -92,17 +92,19 @@ export default function GeminiInsights({ data }: Props) {
       )}
 
       {data.patterns && data.patterns.length > 0 && (
-        <div className="space-y-3">
-          <p className="text-xs text-white/35 uppercase tracking-[0.2em] font-bold">Patterns Detected</p>
-          {data.patterns.map((pattern, i) => (
-            <div
-              key={i}
-              className="flex items-start gap-3 text-sm text-white/55 leading-relaxed"
-            >
-              <span className="text-blue-400/50 mt-0.5">&#x25B8;</span>
-              <span>{pattern}</span>
-            </div>
-          ))}
+        <div className="bg-white/40 backdrop-blur-sm border border-gray-100 rounded-3xl p-8 space-y-5">
+          <p className="text-[10px] text-black/30 uppercase tracking-[0.2em] font-black">Synthesized Patterns</p>
+          <div className="grid grid-cols-1 gap-4">
+            {data.patterns.map((pattern, i) => (
+              <div
+                key={i}
+                className="flex items-start gap-4 text-base text-black/60 font-medium leading-relaxed"
+              >
+                <div className="w-1.5 h-1.5 rounded-full bg-blue-500/30 mt-2 flex-shrink-0" />
+                <span>{pattern}</span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </section>

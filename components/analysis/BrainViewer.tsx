@@ -179,16 +179,16 @@ export default function BrainViewer({ activeTopic, topics, onTopicSelect }: Prop
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(w, h);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setClearColor(0x08080f, 1);
+    renderer.setClearColor(0xffffff, 0); // Transparent for white bg
     container.appendChild(renderer.domElement);
 
-    // Lighting — match Meta's demo look
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+    // Lighting — brighter for white theme
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
     scene.add(ambientLight);
-    const dirLight1 = new THREE.DirectionalLight(0xffffff, 0.8);
+    const dirLight1 = new THREE.DirectionalLight(0xffffff, 0.5);
     dirLight1.position.set(2, 3, 4);
     scene.add(dirLight1);
-    const dirLight2 = new THREE.DirectionalLight(0x8888ff, 0.3);
+    const dirLight2 = new THREE.DirectionalLight(0xa855f7, 0.2);
     dirLight2.position.set(-3, -1, -2);
     scene.add(dirLight2);
 
@@ -210,23 +210,25 @@ export default function BrainViewer({ activeTopic, topics, onTopicSelect }: Prop
       geometry.setIndex(new THREE.BufferAttribute(indices, 1));
       geometry.computeVertexNormals();
 
-      // Set up vertex colors from sulcal depth (gray brain look)
+      // Set up vertex colors from sulcal depth (light gray/silver look)
       sulcData = new Float32Array(sulcArray);
       const colors = new Float32Array(vertexCount * 3);
       for (let i = 0; i < vertexCount; i++) {
         const s = sulcData[i];
-        // Sulci (deep) = darker, Gyri (ridges) = lighter — cold dark teal base
-        const base = 0.05 + (1 - s) * 0.1;
-        colors[i * 3] = 0.0;
-        colors[i * 3 + 1] = base * 0.8;
-        colors[i * 3 + 2] = base * 1.6;
+        // Sulci (deep) = darker, Gyri (ridges) = lighter — light silver base
+        const base = 0.85 + (1 - s) * 0.1;
+        colors[i * 3] = base;
+        colors[i * 3 + 1] = base;
+        colors[i * 3 + 2] = base + 0.05;
       }
       geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
 
       const material = new THREE.MeshPhongMaterial({
         vertexColors: true,
-        shininess: 20,
-        specular: new THREE.Color(0x222222),
+        shininess: 40,
+        specular: new THREE.Color(0x444444),
+        transparent: true,
+        opacity: 0.9,
       });
 
       brainMesh = new THREE.Mesh(geometry, material);
@@ -342,8 +344,9 @@ export default function BrainViewer({ activeTopic, topics, onTopicSelect }: Prop
             colorAttr.setXYZ(i, r, g, b);
           } else {
             const s = ref.sulcData[i];
-            const base = 0.05 + (1 - s) * 0.1;
-            colorAttr.setXYZ(i, 0.0, base * 0.8, base * 1.6);
+            // Match the light silver base from initialization
+            const base = 0.85 + (1 - s) * 0.1;
+            colorAttr.setXYZ(i, base, base, base + 0.05);
           }
         }
         colorAttr.needsUpdate = true;
@@ -437,86 +440,86 @@ export default function BrainViewer({ activeTopic, topics, onTopicSelect }: Prop
   }, [activeTopic, activateForTopic, clearActivation]);
 
   return (
-    <section className="space-y-5">
+    <section className="space-y-8">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-3">
-          <div className="w-2 h-2 rounded-full bg-red-500/60 animate-glow-pulse" />
-          <h2 className="text-sm tracking-[0.2em] uppercase text-white/50 font-bold">
+          <div className="w-1.5 h-1.5 rounded-full bg-red-600" />
+          <h2 className="text-xs tracking-[0.3em] uppercase text-black/40 font-bold">
             Neural Activation Map
           </h2>
         </div>
         {tribeAvailable && (
-          <span className="text-xs text-emerald-400/60 tracking-wider">
+          <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600/40">
             Powered by Meta TRIBE v2
           </span>
         )}
       </div>
 
-      <div className="relative rounded-2xl overflow-hidden border border-white/[0.06] bg-[#08080f]">
+      <div className="relative rounded-3xl overflow-hidden border border-gray-100 bg-white shadow-sm hover:shadow-md transition-shadow">
         <div ref={containerRef} className="w-full h-[500px]" />
 
         {/* Overlays */}
         {activeTopic && predictionSource === "tribe" && (
-          <div className="absolute top-5 left-6 animate-fade-in pointer-events-none max-w-[300px]">
-            <div className="flex items-center gap-2 mb-1">
+          <div className="absolute top-6 left-8 animate-fade-in pointer-events-none max-w-[320px]">
+            <div className="flex items-center gap-2 mb-2">
               <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: DOMAIN_COLORS[activeTopic.domain] }} />
-              <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: DOMAIN_COLORS[activeTopic.domain] }}>
+              <span className="text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: DOMAIN_COLORS[activeTopic.domain] }}>
                 {activeTopic.domain}
               </span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-bold tracking-wider">
+              <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-purple-50 text-purple-600 border border-purple-100 font-bold tracking-widest uppercase">
                 TRIBE v2
               </span>
             </div>
-            <p className="text-base font-bold text-white/90">{activeTopic.name}</p>
-            <p className="text-[10px] text-white/35 mt-1">
-              fMRI-predicted · 20,484 cortical vertices · fsaverage5
+            <p className="text-xl font-bold text-black">{activeTopic.name}</p>
+            <p className="text-[10px] text-black/40 mt-1 uppercase tracking-widest font-bold">
+              fMRI-predicted · Cortical Map
             </p>
           </div>
         )}
 
         {activeTopic && predictionSource === "procedural" && (
-          <div className="absolute top-5 left-6 animate-fade-in pointer-events-none">
-            <p className="text-sm text-white/50">{activeTopic.name}</p>
-            <p className="text-[10px] text-white/25 mt-1">TRIBE v2 sidecar not connected</p>
+          <div className="absolute top-6 left-8 animate-fade-in pointer-events-none">
+            <p className="text-lg font-bold text-black/80">{activeTopic.name}</p>
+            <p className="text-[10px] text-black/30 mt-1 font-bold uppercase tracking-widest">Procedural approximation</p>
           </div>
         )}
 
         {loading && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="flex items-center gap-3 px-5 py-2.5 rounded-full bg-black/70 backdrop-blur-sm border border-white/[0.06]">
-              <div className="w-4 h-4 rounded-full border-2 border-red-500/30 border-t-red-500 animate-spin" />
-              <span className="text-xs text-white/60">Predicting brain activation...</span>
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-white/40 backdrop-blur-[2px]">
+            <div className="flex items-center gap-3 px-6 py-3 rounded-full bg-white shadow-lg border border-gray-100">
+              <div className="w-4 h-4 rounded-full border-2 border-purple-200 border-t-purple-600 animate-spin" />
+              <span className="text-xs font-bold text-black/60 uppercase tracking-widest">Predicting activation...</span>
             </div>
           </div>
         )}
 
         {!activeTopic && !loading && meshLoaded && (
-          <div className="absolute top-5 left-6 pointer-events-none animate-fade-in">
-            <p className="text-sm text-white/50">Select a topic below to see brain activation</p>
-            <p className="text-xs text-white/25 mt-1">Drag to rotate · Scroll to zoom</p>
+          <div className="absolute top-6 left-8 pointer-events-none animate-fade-in">
+            <p className="text-xs font-bold text-black/40 uppercase tracking-[0.2em]">Select a topic below</p>
+            <p className="text-[10px] text-black/20 mt-1 font-medium tracking-widest uppercase">Interactive fMRI Mapping</p>
           </div>
         )}
 
         {/* Color scale legend */}
-        <div className="absolute bottom-4 right-5 flex items-center gap-2 pointer-events-none">
-          <span className="text-[10px] text-white/25">Low</span>
-          <div className="w-24 h-2 rounded-full" style={{
+        <div className="absolute bottom-6 right-8 flex items-center gap-3 pointer-events-none px-4 py-2 rounded-full bg-white/50 backdrop-blur-sm border border-gray-50">
+          <span className="text-[9px] font-bold text-black/30 uppercase tracking-widest">Low</span>
+          <div className="w-24 h-1.5 rounded-full" style={{
             background: "linear-gradient(to right, #002040, #005973, #0d995a, #66d126, #f2eb1a, #ff9e0d, #ff5908, #f21e0d, #b30d05, #610505)"
           }} />
-          <span className="text-[10px] text-white/25">High</span>
+          <span className="text-[9px] font-bold text-black/30 uppercase tracking-widest">High</span>
         </div>
 
         {/* TRIBE v2 status */}
         <div className="absolute bottom-4 left-5 pointer-events-none">
           {tribeAvailable ? (
             <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-[10px] text-emerald-400/60 font-bold tracking-wider">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[10px] text-emerald-600/40 font-bold tracking-wider">
                 Meta TRIBE v2 · fsaverage5
               </span>
             </div>
           ) : meshLoaded ? (
-            <span className="text-[10px] text-white/15">
+            <span className="text-[10px] text-black/10">
               Start TRIBE v2 sidecar for real fMRI predictions
             </span>
           ) : null}
@@ -525,32 +528,33 @@ export default function BrainViewer({ activeTopic, topics, onTopicSelect }: Prop
 
       {/* Top activated regions */}
       {topRegions.length > 0 && predictionSource === "tribe" && (
-        <div className="glass rounded-xl p-5 space-y-3 animate-slide-up">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">
+        <div className="bg-white/70 backdrop-blur-xl border border-gray-100 rounded-3xl p-8 space-y-6 shadow-sm hover:shadow-md transition-shadow animate-slide-up">
+          <div className="flex items-center gap-4 mb-2">
+            <span className="text-[10px] text-black/40 uppercase tracking-[0.2em] font-black">
               Most Activated Brain Regions
             </span>
-            <div className="h-px flex-1 bg-gradient-to-r from-red-500/15 to-transparent" />
+            <div className="h-px flex-1 bg-gradient-to-r from-red-500/10 to-transparent" />
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {topRegions.map((region, i) => (
-              <div key={region.id} className="flex items-center gap-3 px-3 py-2 rounded-lg bg-white/[0.02] border border-white/[0.04]">
-                <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold" style={{
-                  background: `rgba(${Math.round(smoothActivationColor(region.mean_activation)[0] * 255)}, ${Math.round(smoothActivationColor(region.mean_activation)[1] * 255)}, ${Math.round(smoothActivationColor(region.mean_activation)[2] * 255)}, 0.3)`,
+              <div key={region.id} className="flex items-center gap-4 px-4 py-3 rounded-2xl bg-black/[0.02] border border-black/[0.03] transition-all duration-300 hover:bg-black/[0.04]">
+                <div className="w-8 h-8 rounded-xl flex items-center justify-center text-[10px] font-black shadow-sm" style={{
+                  background: `rgba(${Math.round(smoothActivationColor(region.mean_activation)[0] * 255)}, ${Math.round(smoothActivationColor(region.mean_activation)[1] * 255)}, ${Math.round(smoothActivationColor(region.mean_activation)[2] * 255)}, 0.1)`,
                   color: `rgb(${Math.round(smoothActivationColor(region.mean_activation)[0] * 255)}, ${Math.round(smoothActivationColor(region.mean_activation)[1] * 255)}, ${Math.round(smoothActivationColor(region.mean_activation)[2] * 255)})`,
+                  border: `1px solid rgba(${Math.round(smoothActivationColor(region.mean_activation)[0] * 255)}, ${Math.round(smoothActivationColor(region.mean_activation)[1] * 255)}, ${Math.round(smoothActivationColor(region.mean_activation)[2] * 255)}, 0.2)`,
                 }}>
                   {i + 1}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-white/70 truncate">{friendlyName(region.name)}</p>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <div className="flex-1 h-1 bg-white/[0.05] rounded-full overflow-hidden">
+                  <p className="text-sm font-bold text-black/70 truncate">{friendlyName(region.name)}</p>
+                  <div className="flex items-center gap-3 mt-1.5">
+                    <div className="flex-1 h-1.5 bg-black/[0.05] rounded-full overflow-hidden">
                       <div className="h-full rounded-full" style={{
                         width: `${region.mean_activation * 100}%`,
                         background: `linear-gradient(to right, #005973, #66d126, #f2eb1a, #ff5908, #b30d05, #610505)`,
                       }} />
                     </div>
-                    <span className="text-[13px] text-white font-bold w-10 text-right tabular-nums tracking-tight">
+                    <span className="text-sm text-black font-black w-10 text-right tabular-nums tracking-tighter">
                       {(region.mean_activation * 100).toFixed(0)}%
                     </span>
                   </div>
@@ -562,7 +566,7 @@ export default function BrainViewer({ activeTopic, topics, onTopicSelect }: Prop
       )}
 
       {/* Topic chips */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-3">
         {(showAllTopics ? topics : topics.slice(0, 8)).map((topic) => {
           const isActive = activeTopic?.name === topic.name;
           const color = DOMAIN_COLORS[topic.domain];
@@ -570,22 +574,22 @@ export default function BrainViewer({ activeTopic, topics, onTopicSelect }: Prop
             <button
               key={topic.name}
               onClick={() => onTopicSelect(isActive ? null : topic)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs transition-all duration-300 press-effect"
+              className="flex items-center gap-3 px-4 py-2 rounded-xl text-xs transition-all duration-300 press-effect border shadow-sm group"
               style={{
-                border: `1px solid ${isActive ? color : "rgba(255,255,255,0.08)"}`,
-                background: isActive ? `${color}15` : "transparent",
-                color: isActive ? color : "rgba(255,255,255,0.5)",
+                borderColor: isActive ? `${color}44` : "rgba(0,0,0,0.06)",
+                background: isActive ? `${color}0d` : "white",
+                color: isActive ? color : "rgba(0,0,0,0.5)",
               }}
             >
-              <span>{topic.name}</span>
-              <span className="text-white/25 font-data">{topic.count}&times;</span>
+              <span className="font-bold group-hover:text-black transition-colors">{topic.name}</span>
+              <span className="text-black/20 font-black tracking-tighter group-hover:text-black/40 transition-colors">{topic.count}&times;</span>
             </button>
           );
         })}
         {!showAllTopics && topics.length > 8 && (
           <button
             onClick={() => setShowAllTopics(true)}
-            className="text-xs text-white/30 hover:text-white/60 self-center px-3 py-1.5 rounded-full border border-white/[0.06] hover:border-white/[0.15] transition-all duration-300"
+            className="text-[10px] font-black uppercase tracking-widest text-black/30 hover:text-black/60 self-center px-4 py-2 rounded-xl border border-gray-100 hover:border-gray-200 transition-all duration-300 shadow-sm"
           >
             +{topics.length - 8} more
           </button>
@@ -593,7 +597,7 @@ export default function BrainViewer({ activeTopic, topics, onTopicSelect }: Prop
         {showAllTopics && topics.length > 8 && (
           <button
             onClick={() => setShowAllTopics(false)}
-            className="text-xs text-white/30 hover:text-white/60 self-center px-3 py-1.5 rounded-full border border-white/[0.06] hover:border-white/[0.15] transition-all duration-300"
+            className="text-[10px] font-black uppercase tracking-widest text-black/30 hover:text-black/60 self-center px-4 py-2 rounded-xl border border-gray-100 hover:border-gray-200 transition-all duration-300 shadow-sm"
           >
             show less
           </button>

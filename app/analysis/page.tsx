@@ -104,7 +104,7 @@ export default function AnalysisPage() {
 
   if (!result) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="relative w-16 h-16">
           <div className="absolute inset-0 rounded-full bg-purple-500/10 animate-ping" style={{ animationDuration: '2s' }} />
           <div className="absolute inset-4 rounded-full bg-purple-500/20 animate-pulse" />
@@ -115,33 +115,33 @@ export default function AnalysisPage() {
   }
 
   return (
-    <div className="min-h-screen noise-bg">
+    <div className="min-h-screen bg-[#fafafa] selection:bg-purple-100 selection:text-purple-900 transition-colors duration-1000">
       {/* Scroll progress bar */}
-      <div className="fixed top-0 left-0 right-0 h-[2px] z-50">
+      <div className="fixed top-0 left-0 right-0 h-[3px] z-50">
         <div
-          className="h-full transition-[width] duration-150 ease-out"
+          className="h-full transition-[width] duration-300 ease-out"
           style={{
             width: `${scrollProgress * 100}%`,
             background: `linear-gradient(to right, ${result.ARCHETYPE.color}, #ec4899)`,
-            boxShadow: `0 0 10px ${result.ARCHETYPE.color}66`,
+            boxShadow: `0 1px 4px ${result.ARCHETYPE.color}33`,
           }}
         />
       </div>
 
       {/* Header */}
-      <header className="border-b border-white/[0.06] px-8 py-4 flex items-center justify-between sticky top-0 bg-[#050508]/90 backdrop-blur-xl z-20">
+      <header className="border-b border-gray-100 px-8 py-4 flex items-center justify-between sticky top-0 bg-white/80 backdrop-blur-xl z-20">
         <div className="flex items-center gap-3">
-          <div className="w-2.5 h-2.5 rounded-full animate-glow-pulse" style={{ backgroundColor: result.ARCHETYPE.color, boxShadow: `0 0 10px ${result.ARCHETYPE.color}` }} />
-          <span className="text-base font-bold tracking-[0.2em] text-white">
+          <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: result.ARCHETYPE.color, boxShadow: `0 0 10px ${result.ARCHETYPE.color}40` }} />
+          <span className="text-sm font-bold tracking-[0.3em] text-black">
             MINDMIRROR
           </span>
-          <span className="text-sm text-white/55 ml-2 hidden sm:block">
-            / {result.ARCHETYPE.name}
+          <span className="text-xs text-black/40 ml-2 hidden sm:block font-bold tracking-widest">
+            / {result.ARCHETYPE.name.toUpperCase()}
           </span>
         </div>
         <button
           onClick={() => router.push("/")}
-          className="text-sm text-white/55 hover:text-white transition-all duration-300 flex items-center gap-2 group"
+          className="text-xs font-bold tracking-widest text-black/40 hover:text-purple-600 transition-all duration-300 flex items-center gap-2 group uppercase"
         >
           <span className="group-hover:-translate-x-1 transition-transform duration-300">&larr;</span>
           <span>New Analysis</span>
@@ -149,7 +149,7 @@ export default function AnalysisPage() {
       </header>
 
       {/* Content */}
-      <main className="max-w-6xl mx-auto px-6 sm:px-10 py-16 space-y-28">
+      <main className="max-w-6xl mx-auto px-6 sm:px-10 py-20 space-y-32">
         <RevealSection>
           <ArchetypeHero archetype={result.ARCHETYPE} />
         </RevealSection>
@@ -202,12 +202,12 @@ export default function AnalysisPage() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-white/[0.06] px-8 py-6 flex items-center justify-between max-w-6xl mx-auto">
-        <span className="text-xs text-white/40">Built at Bitcamp 2026</span>
-        <div className="flex items-center gap-4">
-          <span className="text-xs text-white/40">Claude + Gemini + Three.js + TRIBE v2</span>
-          <div className="w-1 h-1 rounded-full bg-white/10" />
-          <span className="text-xs text-white/30 font-data">{conversations.length} conversations analyzed</span>
+      <footer className="border-t border-gray-100 px-8 py-10 flex flex-col sm:flex-row items-center justify-between gap-6 max-w-6xl mx-auto">
+        <span className="text-[10px] font-bold tracking-[0.3em] text-black/20 uppercase">Built at Bitcamp 2026</span>
+        <div className="flex items-center gap-6">
+          <span className="text-[10px] font-bold tracking-[0.3em] text-black/20 uppercase">TRIBE v2 · fsaverage5</span>
+          <div className="w-1 h-1 rounded-full bg-gray-200" />
+          <span className="text-[10px] font-bold tracking-[0.3em] text-black/20 uppercase">{conversations.length} threads analyzed</span>
         </div>
       </footer>
     </div>
