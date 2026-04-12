@@ -406,7 +406,6 @@ export default function BrainViewer({ activeTopic, topics, onTopicSelect }: Prop
   const activateForTopic = useCallback(async (topic: Topic) => {
     if (!sceneRef.current) return;
     setLoading(true);
-    setTopRegions([]);
 
     try {
       const res = await fetch("/api/brain", {
@@ -419,7 +418,11 @@ export default function BrainViewer({ activeTopic, topics, onTopicSelect }: Prop
         applyActivation(data.activation);
         setTribeAvailable(true);
         setPredictionSource("tribe");
-        if (data.top_regions) setTopRegions(data.top_regions);
+        if (data.top_regions) {
+          setTopRegions(data.top_regions);
+        } else {
+          setTopRegions([]);
+        }
         setLoading(false);
         return;
       }
@@ -484,16 +487,7 @@ export default function BrainViewer({ activeTopic, topics, onTopicSelect }: Prop
           </div>
         )}
 
-        {loading && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-white/40 backdrop-blur-[2px]">
-            <div className="flex items-center gap-3 px-6 py-3 rounded-full bg-white shadow-lg border border-gray-100">
-              <div className="w-4 h-4 rounded-full border-2 border-purple-200 border-t-purple-600 animate-spin" />
-              <span className="text-xs font-bold text-black/60 uppercase tracking-widest">Predicting activation...</span>
-            </div>
-          </div>
-        )}
-
-        {!activeTopic && !loading && meshLoaded && (
+        {!activeTopic && meshLoaded && (
           <div className="absolute top-6 left-8 pointer-events-none animate-fade-in">
             <p className="text-xs font-bold text-black/40 uppercase tracking-[0.2em]">Select a topic below</p>
             <p className="text-[10px] text-black/20 mt-1 font-medium tracking-widest uppercase">Interactive fMRI Mapping</p>
@@ -527,40 +521,70 @@ export default function BrainViewer({ activeTopic, topics, onTopicSelect }: Prop
       </div>
 
       {/* Top activated regions */}
-      {topRegions.length > 0 && predictionSource === "tribe" && (
-        <div className="bg-white/70 backdrop-blur-xl border border-gray-100 rounded-3xl p-8 space-y-6 shadow-sm hover:shadow-md transition-shadow animate-slide-up">
+      {predictionSource === "tribe" && (topRegions.length > 0 || loading) && (
+        <div 
+          className="bg-white/70 backdrop-blur-xl border border-gray-100 rounded-3xl p-8 space-y-6 shadow-sm transition-all duration-500"
+        >
           <div className="flex items-center gap-4 mb-2">
             <span className="text-[10px] text-black/40 uppercase tracking-[0.2em] font-black">
               Most Activated Brain Regions
             </span>
             <div className="h-px flex-1 bg-gradient-to-r from-red-500/10 to-transparent" />
           </div>
+          
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {topRegions.map((region, i) => (
-              <div key={region.id} className="flex items-center gap-4 px-4 py-3 rounded-2xl bg-black/[0.02] border border-black/[0.03] transition-all duration-300 hover:bg-black/[0.04]">
-                <div className="w-8 h-8 rounded-xl flex items-center justify-center text-[10px] font-black shadow-sm" style={{
-                  background: `rgba(${Math.round(smoothActivationColor(region.mean_activation)[0] * 255)}, ${Math.round(smoothActivationColor(region.mean_activation)[1] * 255)}, ${Math.round(smoothActivationColor(region.mean_activation)[2] * 255)}, 0.1)`,
-                  color: `rgb(${Math.round(smoothActivationColor(region.mean_activation)[0] * 255)}, ${Math.round(smoothActivationColor(region.mean_activation)[1] * 255)}, ${Math.round(smoothActivationColor(region.mean_activation)[2] * 255)})`,
-                  border: `1px solid rgba(${Math.round(smoothActivationColor(region.mean_activation)[0] * 255)}, ${Math.round(smoothActivationColor(region.mean_activation)[1] * 255)}, ${Math.round(smoothActivationColor(region.mean_activation)[2] * 255)}, 0.2)`,
-                }}>
-                  {i + 1}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-black/70 truncate">{friendlyName(region.name)}</p>
-                  <div className="flex items-center gap-3 mt-1.5">
-                    <div className="flex-1 h-1.5 bg-black/[0.05] rounded-full overflow-hidden">
-                      <div className="h-full rounded-full" style={{
-                        width: `${region.mean_activation * 100}%`,
-                        background: `linear-gradient(to right, #005973, #66d126, #f2eb1a, #ff5908, #b30d05, #610505)`,
-                      }} />
+            {Array.from({ length: 8 }).map((_, i) => {
+              const region = topRegions[i];
+              const activation = region?.mean_activation || 0;
+              const [r, g, b] = smoothActivationColor(activation);
+              
+              return (
+                <div 
+                  key={i} 
+                  className={`flex items-center gap-4 px-4 py-3 rounded-2xl bg-black/[0.02] border border-black/[0.03] transition-all duration-300 ${!region ? "opacity-20" : "opacity-100 hover:bg-black/[0.04]"}`}
+                >
+                  <div 
+                    className="w-8 h-8 rounded-xl flex items-center justify-center text-[10px] font-black shadow-sm transition-colors duration-[1000ms]" 
+                    style={{
+                      background: `rgba(${Math.round(r * 255)}, ${Math.round(g * 255)}, ${Math.round(b * 255)}, 0.1)`,
+                      color: `rgb(${Math.round(r * 255)}, ${Math.round(g * 255)}, ${Math.round(b * 255)})`,
+                      border: `1px solid rgba(${Math.round(r * 255)}, ${Math.round(g * 255)}, ${Math.round(b * 255)}, 0.2)`,
+                    }}
+                  >
+                    {i + 1}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="overflow-hidden">
+                      <p 
+                        key={region?.name || "none"}
+                        className="text-sm font-bold text-black/70 truncate animate-fade-in"
+                        style={{ animationDuration: '0.8s' }}
+                      >
+                        {region ? friendlyName(region.name) : "..."}
+                      </p>
                     </div>
-                    <span className="text-sm text-black font-black w-10 text-right tabular-nums tracking-tighter">
-                      {(region.mean_activation * 100).toFixed(0)}%
-                    </span>
+                    <div className="flex items-center gap-3 mt-1.5">
+                      <div className="flex-1 h-1.5 bg-black/[0.05] rounded-full overflow-hidden">
+                        <div 
+                          className="h-full rounded-full transition-all duration-[1200ms] ease-in-out" 
+                          style={{
+                            width: `${activation * 100}%`,
+                            background: `linear-gradient(to right, #005973, #66d126, #f2eb1a, #ff5908, #b30d05, #610505)`,
+                          }} 
+                        />
+                      </div>
+                      <span 
+                        key={activation}
+                        className="text-sm text-black font-black w-10 text-right tabular-nums tracking-tighter animate-fade-in"
+                        style={{ animationDuration: '0.6s' }}
+                      >
+                        {region ? `${(activation * 100).toFixed(0)}%` : "0%"}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
