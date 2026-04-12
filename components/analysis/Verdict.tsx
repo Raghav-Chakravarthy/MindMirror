@@ -48,21 +48,20 @@ export default function Verdict({ verdict }: Props) {
         
         <div className="relative z-10 space-y-6">
           {sentences.map((sentence, i) => {
-            const isHighlight = sentence.toLowerCase().includes("see what you actually know");
-            const isLast = i === sentences.length - 1;
+            const isHighlight = i === sentences.length - 1;
             
             return (
               <p
                 key={i}
                 className={`text-lg sm:text-xl leading-relaxed transition-all duration-700 ${
-                  isHighlight ? "text-center text-purple-600 font-bold" : "text-left"
+                  isHighlight ? "text-center text-purple-600 font-bold pt-6" : "text-left"
                 }`}
                 style={{
                   opacity: i < visibleCount ? 1 : 0,
                   transform: i < visibleCount ? "translateY(0)" : "translateY(12px)",
                   transitionDelay: `${i * 100}ms`,
-                  color: isHighlight ? undefined : isLast ? "rgba(0,0,0,0.8)" : "rgba(0,0,0,0.5)",
-                  fontWeight: isHighlight ? 700 : isLast ? 700 : 450,
+                  color: isHighlight ? undefined : "rgba(0,0,0,0.5)",
+                  fontWeight: isHighlight ? 700 : 450,
                 }}
               >
                 {sentence}

@@ -217,7 +217,7 @@ export default function HomePage() {
                 <span className="text-purple-600">when nobody is watching?</span>
               </h2>
               <p className="text-black/60 text-lg leading-relaxed">
-                Upload your conversation exports from Claude, ChatGPT, or Deepseek. 
+                Upload your conversation exports from Claude, ChatGPT, or Gemini. 
                 Our engine extracts your latent thinking patterns, biases, and skills 
                 to build a high-resolution cognitive profile.
               </p>
@@ -251,7 +251,7 @@ export default function HomePage() {
                     {[
                       { name: "Claude", color: "#d97706" },
                       { name: "ChatGPT", color: "#10b981" },
-                      { name: "Deepseek", color: "#3b82f6" },
+                      { name: "Gemini", color: "#3b82f6" },
                     ].map((p) => (
                       <div key={p.name} className="text-center p-2 rounded-lg bg-gray-50/50">
                         <p className="text-[10px] font-bold uppercase tracking-tight" style={{ color: p.color }}>{p.name}</p>

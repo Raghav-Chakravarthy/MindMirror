@@ -160,7 +160,7 @@ export default function DropZone({ onReady }: Props) {
         className={`block border-2 border-dashed rounded-xl transition-all duration-300 cursor-pointer ${
           dragging
             ? "border-purple-500/50 bg-purple-500/5"
-            : "border-white/[0.08] hover:border-purple-500/30 hover:bg-purple-500/[0.02]"
+            : "border-black/[0.08] hover:border-purple-500/30 hover:bg-purple-500/[0.02]"
         }`}
         onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
         onDragLeave={() => setDragging(false)}
@@ -176,18 +176,18 @@ export default function DropZone({ onReady }: Props) {
         <div className="px-8 py-16 text-center space-y-4">
           <div className="flex justify-center">
             <div className={`w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 ${
-              dragging ? 'bg-purple-500/20 scale-110' : 'bg-white/[0.04]'
+              dragging ? 'bg-purple-500/20 scale-110' : 'bg-black/[0.04]'
             }`}>
               <svg width="22" height="22" viewBox="0 0 20 20" fill="none" className={`transition-transform duration-300 ${dragging ? '-translate-y-1' : ''}`}>
-                <path d="M10 14V3M10 3L6 7M10 3L14 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-white/40" />
-                <path d="M3 14V16C3 16.5523 3.44772 17 4 17H16C16.5523 17 17 16.5523 17 16V14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="text-white/25" />
+                <path d="M10 14V3M10 3L6 7M10 3L14 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-black/40" />
+                <path d="M3 14V16C3 16.5523 3.44772 17 4 17H16C16.5523 17 17 16.5523 17 16V14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="text-black/25" />
               </svg>
             </div>
           </div>
-          <p className="text-base text-white/50">
+          <p className="text-base text-black/50">
             Drop your export files here, or <span className="text-purple-400/80 hover:text-purple-400 transition-colors font-medium">browse</span>
           </p>
-          <p className="text-xs text-white/30 font-data">
+          <p className="text-xs text-black/30 font-data">
             .json &middot; .jsonl &middot; .zip — Claude, ChatGPT, Gemini
           </p>
         </div>
@@ -200,7 +200,7 @@ export default function DropZone({ onReady }: Props) {
       )}
 
       {detected.length > 0 && (
-        <ul className="text-sm text-white/40 space-y-1.5">
+        <ul className="text-sm text-black/40 space-y-1.5">
           {detected.map((d, i) => (
             <li key={i} className="flex items-center gap-2">
               <span className="text-emerald-400/70">&#x2713;</span> {d}
