@@ -1,6 +1,7 @@
 {
   "functions": {
     "app/api/analyze/route.ts": { "maxDuration": 60 },
-    "app/api/gemini-extract/route.ts": { "maxDuration": 30 }
+    "app/api/gemini-extract/route.ts": { "maxDuration": 30 },
+    "app/api/brain/route.ts": { "maxDuration": 60 }
   }
 }
