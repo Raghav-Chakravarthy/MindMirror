@@ -1,11 +1,9 @@
 import { NextRequest } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
 import { SYSTEM_PROMPT, buildUserMessage } from "@/lib/system-prompt";
 import { Conversation } from "@/lib/types";
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   try {
@@ -22,28 +20,70 @@ export async function POST(req: NextRequest) {
 
     const userMessage = buildUserMessage(conversations);
 
-    const stream = client.messages.stream({
-      model: "claude-sonnet-4-6",
-      max_tokens: 4096,
-      system: SYSTEM_PROMPT,
-      messages: [{ role: "user", content: userMessage }],
+    const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": process.env.ANTHROPIC_API_KEY!,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: 4096,
+        stream: true,
+        system: SYSTEM_PROMPT,
+        messages: [{ role: "user", content: userMessage }],
+      }),
     });
 
+    if (!anthropicRes.ok) {
+      const errText = await anthropicRes.text();
+      console.error("[analyze] Anthropic API error:", anthropicRes.status, errText);
+      return new Response(
+        JSON.stringify({ error: `Anthropic API error ${anthropicRes.status}: ${errText}` }),
+        { status: 502, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
     const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
 
     const readable = new ReadableStream({
       async start(controller) {
         try {
-          for await (const event of stream) {
-            if (
-              event.type === "content_block_delta" &&
-              event.delta.type === "text_delta"
-            ) {
-              controller.enqueue(
-                encoder.encode(`data: ${JSON.stringify({ text: event.delta.text })}\n\n`)
-              );
+          const reader = anthropicRes.body!.getReader();
+          let buffer = "";
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n");
+            buffer = lines.pop() ?? "";
+
+            for (const line of lines) {
+              if (!line.startsWith("data: ")) continue;
+              const data = line.slice(6).trim();
+              if (!data || data === "[DONE]") continue;
+
+              try {
+                const event = JSON.parse(data);
+                if (
+                  event.type === "content_block_delta" &&
+                  event.delta?.type === "text_delta" &&
+                  event.delta.text
+                ) {
+                  controller.enqueue(
+                    encoder.encode(`data: ${JSON.stringify({ text: event.delta.text })}\n\n`)
+                  );
+                }
+              } catch {
+                // skip unparseable SSE event
+              }
             }
           }
+
           controller.enqueue(encoder.encode("data: [DONE]\n\n"));
           controller.close();
         } catch (err) {
@@ -66,6 +106,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Analysis failed";
+    console.error("[analyze] outer error:", err);
     return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
