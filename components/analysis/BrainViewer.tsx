@@ -176,7 +176,12 @@ export default function BrainViewer({ activeTopic, topics, onTopicSelect }: Prop
     const camera = new THREE.PerspectiveCamera(35, w / h, 0.1, 100);
     camera.position.set(0, 0.2, 4.5);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    } catch {
+      return; // WebGL not available
+    }
     renderer.setSize(w, h);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setClearColor(0xffffff, 0); // Transparent for white bg

@@ -21,10 +21,15 @@ export default function HeroBrain() {
     const camera = new THREE.PerspectiveCamera(35, w / h, 0.1, 100);
     camera.position.set(0, 0, 4.2);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    } catch {
+      return; // WebGL not available — skip silently
+    }
     renderer.setSize(w, h);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setClearColor(0x000000, 0); // Transparent background
+    renderer.setClearColor(0x000000, 0);
     container.appendChild(renderer.domElement);
 
     // Lighting
