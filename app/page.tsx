@@ -94,26 +94,27 @@ export default function HomePage() {
       if (!reader) throw new Error("No stream available");
 
       const decoder = new TextDecoder();
+      let sseBuffer = "";
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split("\n");
+        sseBuffer += decoder.decode(value, { stream: true });
+        const lines = sseBuffer.split("\n");
+        sseBuffer = lines.pop() ?? "";
 
         for (const line of lines) {
           if (!line.startsWith("data: ")) continue;
-          const payload = line.slice(6);
-          if (payload === "[DONE]") continue;
+          const payload = line.slice(6).trim();
+          if (!payload || payload === "[DONE]") continue;
 
           try {
             const parsed = JSON.parse(payload);
             if (parsed.error) throw new Error(parsed.error);
             if (parsed.text) {
               accumulatedRef.current += parsed.text;
-              const preview = accumulatedRef.current.slice(-200);
-              setStreamPreview(preview);
+              setStreamPreview(accumulatedRef.current.slice(-200));
             }
           } catch (e) {
             if (e instanceof Error && e.message !== payload) throw e;
