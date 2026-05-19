@@ -1,8 +1,18 @@
 node_modules
 .next
 .env.local
+.env*.local
+
+# Python brain-service
 tribev2/
 brain-service/venv/
 brain-service/cache/
 brain-service/prediction_cache/
-__pycache__
+brain-service/tribev2/
+brain-service/__pycache__/
+__pycache__/
+*.egg-info/
+*.pyc
+
+# Build artifacts
+tsconfig.tsbuildinfo
