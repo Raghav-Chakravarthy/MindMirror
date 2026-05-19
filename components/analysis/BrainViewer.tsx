@@ -435,6 +435,26 @@ export default function BrainViewer({ activeTopic, topics, onTopicSelect }: Prop
       // Sidecar not running
     }
 
+    // Procedural fallback: deterministic activation from topic name hash
+    const ref = sceneRef.current;
+    if (ref?.sulcData) {
+      const count = ref.sulcData.length;
+      const target = new Float32Array(count);
+      let seed = topic.name.split("").reduce((a, c) => (a * 31 + c.charCodeAt(0)) | 0, 1);
+      const rand = () => { seed = (seed * 1664525 + 1013904223) & 0x7fffffff; return seed / 0x7fffffff; };
+      const numHotspots = 3 + Math.floor(rand() * 3);
+      const hotspots = Array.from({ length: numHotspots }, () => Math.floor(rand() * count));
+      for (let i = 0; i < count; i++) {
+        let maxAct = 0;
+        for (const h of hotspots) {
+          const dist = Math.abs(i - h) / count;
+          maxAct = Math.max(maxAct, Math.exp(-dist * dist * 80) * (0.5 + rand() * 0.5));
+        }
+        target[i] = maxAct;
+      }
+      ref.targetActivation = target;
+      ref.animProgress = 0;
+    }
     setPredictionSource("procedural");
     setLoading(false);
   }, [applyActivation]);
