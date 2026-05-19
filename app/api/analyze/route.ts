@@ -48,6 +48,7 @@ export async function POST(req: NextRequest) {
           controller.close();
         } catch (err) {
           const msg = err instanceof Error ? err.message : "Stream failed";
+          console.error("[analyze] stream error:", err);
           controller.enqueue(
             encoder.encode(`data: ${JSON.stringify({ error: msg })}\n\n`)
           );
