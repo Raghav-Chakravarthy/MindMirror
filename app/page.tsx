@@ -6,6 +6,9 @@ import Link from "next/link";
 import DropZone from "@/components/upload/DropZone";
 import { Conversation } from "@/lib/types";
 import { SAMPLE_RESULT } from "@/lib/sample-data";
+import { parseClaudeExport } from "@/lib/parsers/claude";
+import { parseChatGPTExport } from "@/lib/parsers/chatgpt";
+import { parseGeminiExport } from "@/lib/parsers/gemini";
 import HeroBrain from "@/components/landing/HeroBrain";
 import TypingSlogan from "@/components/landing/TypingSlogan";
 
@@ -46,14 +49,18 @@ export default function HomePage() {
 
       const allConversations: Conversation[] = [];
       for (const file of files) {
-        const res = await fetch("/api/parse", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(file),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error);
-        allConversations.push(...data.conversations);
+        let conversations: Conversation[] = [];
+        if (file.platform === "claude") {
+          conversations = parseClaudeExport(file.content);
+        } else if (file.platform === "openai") {
+          conversations = parseChatGPTExport(file.content);
+        } else if (file.platform === "gemini") {
+          conversations = parseGeminiExport(file.content);
+        }
+        if (conversations.length === 0) {
+          throw new Error(`No conversations found in ${file.filename}.`);
+        }
+        allConversations.push(...conversations);
       }
 
       if (allConversations.length === 0) {
