@@ -55,10 +55,34 @@ function parseOrRepairJson(raw: string): Record<string, unknown> | null {
   let parsed: Record<string, unknown> | null = null;
   try { parsed = JSON.parse(repaired); } catch { return null; }
 
-  // Step 4: fill any missing required fields with defaults
+  // Step 4: fill missing top-level fields with defaults
   for (const [key, def] of Object.entries(FIELD_DEFAULTS)) {
     if (!(key in parsed)) parsed[key] = def;
   }
+
+  // Step 5: deep-patch nested objects that components rely on
+  const arch = (parsed.ARCHETYPE as Record<string, unknown>) ?? {};
+  parsed.ARCHETYPE = { name: "THE THINKER", tagline: "", color: "#6b7280", ...arch };
+
+  const sc = (parsed.SHAREABLE_CARD as Record<string, unknown>) ?? {};
+  parsed.SHAREABLE_CARD = {
+    headline: "", stat: "", pull_quote: "",
+    archetype: parsed.ARCHETYPE,
+    ...sc,
+  };
+
+  if (!Array.isArray(parsed.TOPICS)) parsed.TOPICS = [];
+  if (!Array.isArray(parsed.DEPENDENCY_AUDIT)) parsed.DEPENDENCY_AUDIT = [];
+  if (!Array.isArray(parsed.UNCOMFORTABLE_QUESTIONS)) parsed.UNCOMFORTABLE_QUESTIONS = [];
+  if (!Array.isArray(parsed.KNOWLEDGE_EDGE)) parsed.KNOWLEDGE_EDGE = [];
+
+  const cf = (parsed.COGNITIVE_FINGERPRINT as Record<string, unknown>) ?? {};
+  parsed.COGNITIVE_FINGERPRINT = {
+    systems_thinking: 50, pattern_seeking: 50, first_principles: 50,
+    execution_speed: 50, depth_vs_breadth: 50, uncertainty_tolerance: 50,
+    ...cf,
+  };
+
   return parsed;
 }
 
