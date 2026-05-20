@@ -435,20 +435,25 @@ export default function BrainViewer({ activeTopic, topics, onTopicSelect }: Prop
       // Sidecar not running
     }
 
-    // Procedural fallback: deterministic activation from topic name hash
+    // Procedural fallback: spatially-correct activation using 3D vertex positions
     const ref = sceneRef.current;
-    if (ref?.sulcData) {
+    if (ref?.sulcData && ref.brainMesh) {
       const count = ref.sulcData.length;
       const target = new Float32Array(count);
       let seed = topic.name.split("").reduce((a, c) => (a * 31 + c.charCodeAt(0)) | 0, 1);
       const rand = () => { seed = (seed * 1664525 + 1013904223) & 0x7fffffff; return seed / 0x7fffffff; };
+      const pos = ref.brainMesh.geometry.getAttribute("position") as THREE.BufferAttribute;
       const numHotspots = 3 + Math.floor(rand() * 3);
-      const hotspots = Array.from({ length: numHotspots }, () => Math.floor(rand() * count));
+      const hotspots: [number, number, number][] = Array.from({ length: numHotspots }, () => {
+        const idx = Math.floor(rand() * count);
+        return [pos.getX(idx), pos.getY(idx), pos.getZ(idx)];
+      });
       for (let i = 0; i < count; i++) {
+        const px = pos.getX(i), py = pos.getY(i), pz = pos.getZ(i);
         let maxAct = 0;
-        for (const h of hotspots) {
-          const dist = Math.abs(i - h) / count;
-          maxAct = Math.max(maxAct, Math.exp(-dist * dist * 80) * (0.5 + rand() * 0.5));
+        for (const [hx, hy, hz] of hotspots) {
+          const dx = px - hx, dy = py - hy, dz = pz - hz;
+          maxAct = Math.max(maxAct, Math.exp(-(dx * dx + dy * dy + dz * dz) * 4));
         }
         target[i] = maxAct;
       }
