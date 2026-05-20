@@ -148,6 +148,9 @@ function smoothActivationColor(v: number): [number, number, number] {
   return stops[stops.length - 1].c;
 }
 
+// Direct HF Space URL — bypasses Vercel's 60s function limit for ~50s TRIBE inference
+const TRIBE_URL = "https://vcraghav-mindmirror-brain.hf.space";
+
 export default function BrainViewer({ activeTopic, topics, onTopicSelect }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<{
@@ -157,6 +160,7 @@ export default function BrainViewer({ activeTopic, topics, onTopicSelect }: Prop
     sulcData: Float32Array | null;
     animProgress: number;
   } | null>(null);
+  const tribeAbortRef = useRef<AbortController | null>(null);
   const [tribeAvailable, setTribeAvailable] = useState(false);
   const [loading, setLoading] = useState(false);
   const [predictionSource, setPredictionSource] = useState<"tribe" | "procedural" | null>(null);
@@ -408,61 +412,86 @@ export default function BrainViewer({ activeTopic, topics, onTopicSelect }: Prop
     setPredictionSource(null);
   }, []);
 
+  const applyProcedural = useCallback((topic: Topic) => {
+    const ref = sceneRef.current;
+    if (!ref?.sulcData || !ref.brainMesh) return;
+    const count = ref.sulcData.length;
+    const target = new Float32Array(count);
+    let seed = topic.name.split("").reduce((a, c) => (a * 31 + c.charCodeAt(0)) | 0, 1);
+    const rand = () => { seed = (seed * 1664525 + 1013904223) & 0x7fffffff; return seed / 0x7fffffff; };
+    const pos = ref.brainMesh.geometry.getAttribute("position") as THREE.BufferAttribute;
+    const numHotspots = 3 + Math.floor(rand() * 3);
+    const hotspots: [number, number, number][] = Array.from({ length: numHotspots }, () => {
+      const idx = Math.floor(rand() * count);
+      return [pos.getX(idx), pos.getY(idx), pos.getZ(idx)];
+    });
+    for (let i = 0; i < count; i++) {
+      const px = pos.getX(i), py = pos.getY(i), pz = pos.getZ(i);
+      let maxAct = 0;
+      for (const [hx, hy, hz] of hotspots) {
+        const dx = px - hx, dy = py - hy, dz = pz - hz;
+        maxAct = Math.max(maxAct, Math.exp(-(dx * dx + dy * dy + dz * dz) * 4));
+      }
+      target[i] = maxAct;
+    }
+    ref.targetActivation = target;
+    ref.animProgress = 0;
+  }, []);
+
   const activateForTopic = useCallback(async (topic: Topic) => {
     if (!sceneRef.current) return;
+
+    // Cancel any in-flight TRIBE request for a previous topic
+    tribeAbortRef.current?.abort();
+    const abort = new AbortController();
+    tribeAbortRef.current = abort;
+
+    // Show procedural immediately for instant feedback
+    applyProcedural(topic);
+    setPredictionSource("procedural");
+    setTopRegions([]);
     setLoading(true);
 
+    // Fetch real TRIBE prediction directly from HF Space (no Vercel timeout)
     try {
-      const res = await fetch("/api/brain", {
+      const res = await fetch(`${TRIBE_URL}/predict`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: topic.name }),
+        signal: abort.signal,
       });
+      if (abort.signal.aborted) return;
       const data = await res.json();
       if (data.activation && data.activation.length > 0) {
         applyActivation(data.activation);
         setTribeAvailable(true);
         setPredictionSource("tribe");
-        if (data.top_regions) {
-          setTopRegions(data.top_regions);
-        } else {
-          setTopRegions([]);
-        }
-        setLoading(false);
-        return;
+        setTopRegions(data.top_regions || []);
       }
     } catch {
-      // Sidecar not running
+      // Aborted or HF Space unreachable — stay with procedural
     }
-
-    // Procedural fallback: spatially-correct activation using 3D vertex positions
-    const ref = sceneRef.current;
-    if (ref?.sulcData && ref.brainMesh) {
-      const count = ref.sulcData.length;
-      const target = new Float32Array(count);
-      let seed = topic.name.split("").reduce((a, c) => (a * 31 + c.charCodeAt(0)) | 0, 1);
-      const rand = () => { seed = (seed * 1664525 + 1013904223) & 0x7fffffff; return seed / 0x7fffffff; };
-      const pos = ref.brainMesh.geometry.getAttribute("position") as THREE.BufferAttribute;
-      const numHotspots = 3 + Math.floor(rand() * 3);
-      const hotspots: [number, number, number][] = Array.from({ length: numHotspots }, () => {
-        const idx = Math.floor(rand() * count);
-        return [pos.getX(idx), pos.getY(idx), pos.getZ(idx)];
-      });
-      for (let i = 0; i < count; i++) {
-        const px = pos.getX(i), py = pos.getY(i), pz = pos.getZ(i);
-        let maxAct = 0;
-        for (const [hx, hy, hz] of hotspots) {
-          const dx = px - hx, dy = py - hy, dz = pz - hz;
-          maxAct = Math.max(maxAct, Math.exp(-(dx * dx + dy * dy + dz * dz) * 4));
-        }
-        target[i] = maxAct;
-      }
-      ref.targetActivation = target;
-      ref.animProgress = 0;
-    }
-    setPredictionSource("procedural");
     setLoading(false);
-  }, [applyActivation]);
+  }, [applyActivation, applyProcedural]);
+
+  // Pre-warm the top topics so the cache is hot before the user hovers
+  useEffect(() => {
+    if (!topics.length) return;
+    let cancelled = false;
+    (async () => {
+      for (const topic of topics.slice(0, 5)) {
+        if (cancelled) break;
+        try {
+          await fetch(`${TRIBE_URL}/predict`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text: topic.name }),
+          });
+        } catch { /* ignore — just warming the cache */ }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [topics]);
 
   useEffect(() => {
     if (activeTopic) {
