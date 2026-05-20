@@ -14,6 +14,54 @@ import TypingSlogan from "@/components/landing/TypingSlogan";
 
 type Step = "upload" | "parsing" | "analyzing" | "error";
 
+const FIELD_DEFAULTS: Record<string, unknown> = {
+  COGNITIVE_FINGERPRINT: { systems_thinking: 50, pattern_seeking: 50, first_principles: 50, execution_speed: 50, depth_vs_breadth: 50, uncertainty_tolerance: 50 },
+  TOPICS: [],
+  DEPENDENCY_AUDIT: [],
+  UNCOMFORTABLE_QUESTIONS: ["Analysis was truncated — try again with fewer conversations."],
+  KNOWLEDGE_EDGE: [],
+  ARCHETYPE: { name: "INCOMPLETE ANALYSIS", tagline: "The response was cut off. Try again.", color: "#6b7280" },
+  VERDICT: "The analysis response was truncated before completion. Try uploading fewer conversations or try again.",
+  SHAREABLE_CARD: { headline: "Analysis incomplete", stat: "", pull_quote: "Response was truncated.", archetype: { name: "INCOMPLETE", tagline: "", color: "#6b7280" } },
+};
+
+function parseOrRepairJson(raw: string): Record<string, unknown> | null {
+  // Step 1: try direct parse
+  try { return JSON.parse(raw); } catch {}
+
+  // Step 2: find the opening brace
+  const start = raw.indexOf("{");
+  if (start === -1) return null;
+  let partial = raw.slice(start);
+
+  // Step 3: close any open structures
+  const stack: string[] = [];
+  let inStr = false;
+  let escape = false;
+  for (const c of partial) {
+    if (escape) { escape = false; continue; }
+    if (c === "\\" && inStr) { escape = true; continue; }
+    if (c === '"') { inStr = !inStr; continue; }
+    if (inStr) continue;
+    if (c === "{") stack.push("}");
+    else if (c === "[") stack.push("]");
+    else if ((c === "}" || c === "]") && stack.length) stack.pop();
+  }
+  let repaired = partial.trimEnd();
+  if (inStr) repaired += '"';           // close open string
+  repaired = repaired.replace(/,\s*$/, ""); // drop trailing comma
+  repaired += stack.reverse().join(""); // close open braces/brackets
+
+  let parsed: Record<string, unknown> | null = null;
+  try { parsed = JSON.parse(repaired); } catch { return null; }
+
+  // Step 4: fill any missing required fields with defaults
+  for (const [key, def] of Object.entries(FIELD_DEFAULTS)) {
+    if (!(key in parsed)) parsed[key] = def;
+  }
+  return parsed;
+}
+
 const FEATURES = [
   { label: "Cognitive Fingerprint", desc: "6-axis personality radar", icon: "◈" },
   { label: "Brain Activation", desc: "TRIBE v2 fMRI predictions", icon: "◉" },
@@ -127,26 +175,9 @@ export default function HomePage() {
         .replace(/\s*```$/i, "")
         .trim();
 
-      let result;
-      try {
-        result = JSON.parse(fullText);
-      } catch {
-        const jsonMatch = fullText.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          result = JSON.parse(jsonMatch[0]);
-        } else {
-          throw new Error("Failed to parse analysis response. Please try again.");
-        }
-      }
-
-      const requiredKeys = [
-        "COGNITIVE_FINGERPRINT", "TOPICS", "DEPENDENCY_AUDIT",
-        "UNCOMFORTABLE_QUESTIONS", "KNOWLEDGE_EDGE", "ARCHETYPE",
-        "VERDICT", "SHAREABLE_CARD",
-      ];
-      const missing = requiredKeys.filter((k) => !(k in result));
-      if (missing.length > 0) {
-        throw new Error(`Incomplete analysis — missing: ${missing.join(", ")}. Please try again.`);
+      const result = parseOrRepairJson(fullText);
+      if (!result) {
+        throw new Error("Failed to parse analysis response. Please try again.");
       }
 
       const geminiData = await geminiPromise;
